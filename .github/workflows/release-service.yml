@@ -1,0 +1,75 @@
+name: Release Service
+
+on:
+  push:
+    tags: "service-*"
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Build
+      run: dotnet build --configuration Release /p:AssemblyVersion=${GITHUB_REF#refs/tags/service-}
+    - name: Test
+      run: dotnet test --no-build --configuration Release
+    - name: Publish API
+      run: dotnet publish ./src/InterestPayout/InterestPayout.csproj --output ./publish-api --configuration Release /p:AssemblyVersion=${GITHUB_REF#refs/tags/service-}
+    - name: Publish worker
+      run: dotnet publish ./src/InterestPayout.Worker/InterestPayout.Worker.csproj --output ./publish-worker --configuration Release /p:AssemblyVersion=${GITHUB_REF#refs/tags/service-}
+    - name: Check API dir
+      run: ls ./publish-api
+    - name: Check worker dir
+      run: ls ./publish-worker
+    - name: Publish API to Registry
+      uses: swisschain/Publish-Docker-Github-Action@master
+      with:
+        name: swisschains/lykke-exchange-lykke-interestpayout
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        workdir: ./publish-api
+        # snapshot: true # use snapshot to push an additional image, which is tagged with {YEAR}{MONTH}{DAY}{HOUR}{MINUTE}{SECOND}{first 6 digits of the git sha}
+        tag_names: true  
+        tag_name_skip: service-    
+    - name: Publish worker to Registry
+      uses: swisschain/Publish-Docker-Github-Action@master
+      with:
+        name: swisschains/lykke-exchange-lykke-interestpayout-worker
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        workdir: ./publish-worker
+        # snapshot: true # use snapshot to push an additional image, which is tagged with {YEAR}{MONTH}{DAY}{HOUR}{MINUTE}{SECOND}{first 6 digits of the git sha}
+        tag_names: true  
+        tag_name_skip: service-
+    - name: Update Docker Image
+      uses: swisschain/replace-docker-image@master
+      env:
+        DOCKER_IMAGE_NAME: 'lykke-exchange-lykke-interestpayout'
+        DOCKER_REPOSITORY_NAME: 'swisschains'
+        GIT_USER_API_TOKEN: ${{ secrets.GITHUBSWISSCHAIN_USER_API_TOKEN }}
+        GIT_USER_NAME: 'Github Swisschain'
+        GIT_USER_EMAIL: github@swisschain.io
+        GIT_INFRASTRUCTURE_REPOSITORY_BRANCH: 'master'
+        GIT_INFRASTRUCTURE_REPOSITORY_OWNER: 'swisschain'
+        GIT_INFRASTRUCTURE_REPOSITORY_NAME: 'lykke-kubernetes-test'
+        GIT_REPOSITORY_NAME: ${{ github.event.repository.name }}
+        INPUT_TAG_NAME_SKIP: 'service-'        
+    - name: Update Docker Image
+      uses: swisschain/replace-docker-image@master
+      env:
+        DOCKER_IMAGE_NAME: 'lykke-exchange-lykke-interestpayout-worker'
+        DOCKER_REPOSITORY_NAME: 'swisschains'
+        GIT_USER_API_TOKEN: ${{ secrets.GITHUBSWISSCHAIN_USER_API_TOKEN }}
+        GIT_USER_NAME: 'Github Swisschain'
+        GIT_USER_EMAIL: github@swisschain.io
+        GIT_INFRASTRUCTURE_REPOSITORY_BRANCH: 'master'
+        GIT_INFRASTRUCTURE_REPOSITORY_OWNER: 'swisschain'
+        GIT_INFRASTRUCTURE_REPOSITORY_NAME: 'lykke-kubernetes-test'
+        GIT_REPOSITORY_NAME: ${{ github.event.repository.name }}
+        INPUT_TAG_NAME_SKIP: 'service-'        

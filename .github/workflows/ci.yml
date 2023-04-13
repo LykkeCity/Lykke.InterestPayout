@@ -1,0 +1,76 @@
+name: CI dev build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Raise deploy to dev flag
+      id: Raise_deploy_to_dev_flag
+      run: |
+        echo "SHOULD_DEPLOY_TO_DEV=true" >> $GITHUB_ENV   
+      if: contains( github.event.pull_request.labels.*.name, 'dev' ) || startsWith(github.ref, 'refs/heads/dev-') || github.ref=='refs/heads/master'
+    - name: Build
+      run: dotnet build --configuration Release /p:AssemblyVersion=0.0.0
+    - name: Test
+      run: dotnet test --no-build --configuration Release
+    - name: Publish API
+      run: dotnet publish ./src/InterestPayout/InterestPayout.csproj --output ./publish-api --configuration Release /p:AssemblyVersion=0.0.0
+    - name: Publish worker
+      run: dotnet publish ./src/InterestPayout.Worker/InterestPayout.Worker.csproj --output ./publish-worker --configuration Release /p:AssemblyVersion=0.0.0
+    - name: Check api dir
+      run: ls ./publish-api
+    - name: Check worker dir
+      run: ls ./publish-worker
+    - name: Publish API to registry
+      if: env.SHOULD_DEPLOY_TO_DEV=='true'
+      uses: swisschain/Publish-Docker-Github-Action@master
+      with:
+        name: swisschains/lykke-exchange-lykke-interestpayout:dev
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        workdir: ./publish-api
+        # snapshot: true # use snapshot to push an additional image, which is tagged with {YEAR}{MONTH}{DAY}{HOUR}{MINUTE}{SECOND}{first 6 digits of the git sha}
+        tag_names: true
+    - name: Publish worker to registry
+      if: env.SHOULD_DEPLOY_TO_DEV=='true'
+      uses: swisschain/Publish-Docker-Github-Action@master
+      with:
+        name: swisschains/lykke-exchange-lykke-interestpayout-worker:dev
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        workdir: ./publish-worker
+        # snapshot: true # use snapshot to push an additional image, which is tagged with {YEAR}{MONTH}{DAY}{HOUR}{MINUTE}{SECOND}{first 6 digits of the git sha}
+        tag_names: true
+    - name: Restart service
+      if: env.SHOULD_DEPLOY_TO_DEV=='true'
+      uses: swisschain/kube-restart-pods@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.LYKKE_DEV_KUBE_CONFIG_DATA }}
+        NAMESPACE: lykke-service
+        POD: lykke-interestpayout
+    - name: Restart worker
+      if: env.SHOULD_DEPLOY_TO_DEV=='true'
+      uses: swisschain/kube-restart-pods@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.LYKKE_DEV_KUBE_CONFIG_DATA }}
+        NAMESPACE: lykke-jobs
+        POD: lykke-interestpayout-worker
