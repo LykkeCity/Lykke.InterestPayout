@@ -2,26 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using InterestPayout.Common.Configuration;
-using MassTransit;
 
 namespace InterestPayout.Common.Domain
 {
     public class PayoutConfigService : IPayoutConfigService
     {
-        private readonly Payout[] _configs;
+        private readonly PayoutConfig[] _configs;
 
-        public PayoutConfigService(Payout[] configs)
+        public PayoutConfigService(PayoutConfig[] configs)
         {
             ValidateConfigs(configs);
             _configs = configs;
         }
 
-        public IReadOnlyCollection<Payout> GetAll()
+        public IReadOnlyCollection<PayoutConfig> GetAll()
         {
             return _configs;
         }
 
-        private static void ValidateConfigs(Payout[] configs)
+        private static void ValidateConfigs(PayoutConfig[] configs)
         {
             if (configs == null)
                 throw new InvalidOperationException("Payouts were not specified in the configuration.");

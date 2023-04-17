@@ -42,9 +42,9 @@ namespace InterestPayout.Worker.Messaging.Consumers
 
             // if scheduled time is more than one full interval earlier than current timestamp, then it is too old, skipping
             var currentTimeStamp = DateTimeOffset.UtcNow;
-            var latestAcceptableExecutionTimeStamp = scheduledDateTime + message.CronScheduleInterval * 2;
+            var latestAcceptableExecutionTimeStamp = scheduledDateTime + message.CronScheduleInterval;
             var needSkip = latestAcceptableExecutionTimeStamp < currentTimeStamp ? "Yes" : "No";
-            _logger.LogInformation($"Need skip? {needSkip} scheduled: {scheduledDateTime.Value:T}, latestOkExecution: {latestAcceptableExecutionTimeStamp.Value:T}, now: {currentTimeStamp:T}");
+            _logger.LogInformation($"Need skip? {needSkip}. Scheduled: {scheduledDateTime.Value:T}, latestOkExecution: {latestAcceptableExecutionTimeStamp.Value:T}, now: {currentTimeStamp:T}");
             if (latestAcceptableExecutionTimeStamp < currentTimeStamp)
             {
                 _logger.LogInformation("recurring message is expired and being skipped {@context}", new

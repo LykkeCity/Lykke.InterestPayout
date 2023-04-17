@@ -5,6 +5,6 @@ namespace InterestPayout.Common.Domain
 {
     public interface IPayoutConfigService
     {
-        IReadOnlyCollection<Payout> GetAll();
+        IReadOnlyCollection<PayoutConfig> GetAll();
     }
 }

@@ -1,6 +1,6 @@
 namespace InterestPayout.Common.Configuration
 {
-    public class Payout
+    public class PayoutConfig
     {
         public string AssetId { get; set; }
         public string PayoutCronSchedule { get; set; }

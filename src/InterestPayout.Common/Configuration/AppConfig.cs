@@ -6,6 +6,6 @@
 
         public RabbitMqConfig RabbitMq { get; set; }
         
-        public Payout[] Payouts { get; set; }
+        public PayoutConfig[] Payouts { get; set; }
     }
 }

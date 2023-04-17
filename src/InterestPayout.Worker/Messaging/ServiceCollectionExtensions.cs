@@ -1,4 +1,5 @@
 ﻿using System;
+using GreenPipes;
 using InterestPayout.Common.Configuration;
 using InterestPayout.Common.Domain;
 using InterestPayout.Worker.Messaging.Consumers;
@@ -18,16 +19,9 @@ namespace InterestPayout.Worker.Messaging
 
             services.AddTransient<RecurringPayoutCommandConsumer>();
             
-            services.AddLogging(configure =>
-            {
-                configure.AddConsole();
-                configure.AddDebug();
-                configure.SetMinimumLevel(LogLevel.Trace);
-            });
-
             services.AddMassTransit(x =>
             {
-                var schedulerEndpoint = new Uri("rabbitmq://localhost/quartz");
+                var schedulerEndpoint = new Uri("queue:lykke-pulsar");
 
                 x.AddMessageScheduler(schedulerEndpoint);
 
@@ -58,7 +52,11 @@ namespace InterestPayout.Worker.Messaging
         private static void ConfigureReceivingEndpoints(IRabbitMqBusFactoryConfigurator configurator, IBusRegistrationContext context)
         {
              configurator.ReceiveEndpoint("lykke-interest-payout-recurring-payout-consumer",
-                 endpoint => { endpoint.Consumer(context.GetRequiredService<RecurringPayoutCommandConsumer>); });
+                 endpoint =>
+                 {
+                     endpoint.UseConcurrencyLimit(1);
+                     endpoint.Consumer(context.GetRequiredService<RecurringPayoutCommandConsumer>);
+                 });
         }
     }
 }

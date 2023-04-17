@@ -65,7 +65,7 @@ namespace InterestPayout.Common.Domain
             _logger.LogInformation("Initialization of scheduled recurring messages has successfully finished");
         }
 
-        private async Task CancelSchedulesNotPresentInConfig(IReadOnlyCollection<Payout> configs)
+        private async Task CancelSchedulesNotPresentInConfig(IReadOnlyCollection<PayoutConfig> configs)
         {
             var assets = configs.Select(x => x.AssetId).ToHashSet();
             await using var unitOfWork = await _unitOfWorkManager.Begin($"CancellingSchedulesNotPresentInCfg:{DateTimeOffset.Now.Ticks}");
@@ -91,7 +91,7 @@ namespace InterestPayout.Common.Domain
             await unitOfWork.Commit();
         }
 
-        private async Task HandleScheduleInitForConfigEntry(Payout config, IPayoutScheduleRepository payoutScheduleRepository)
+        private async Task HandleScheduleInitForConfigEntry(PayoutConfig config, IPayoutScheduleRepository payoutScheduleRepository)
         {
             var schedule = await payoutScheduleRepository.GetByAssetIdOrDefault(config.AssetId);
             if (schedule == null)
@@ -130,7 +130,7 @@ namespace InterestPayout.Common.Domain
             }
         }
 
-        private async Task TrySafeCancelScheduleAfterError(Payout config, Exception originalException)
+        private async Task TrySafeCancelScheduleAfterError(PayoutConfig config, Exception originalException)
         {
             try
             {
@@ -152,7 +152,8 @@ namespace InterestPayout.Common.Domain
         private async Task ScheduleNewRecurringPayout(PayoutSchedule schedule)
         {
             var cronExpression = new Quartz.CronExpression(schedule.CronSchedule);
-            var cronScheduleInterval = cronExpression.GetNextValidTimeAfter(DateTimeOffset.UtcNow) - DateTimeOffset.UtcNow;
+            var utcNow = DateTimeOffset.UtcNow;
+            var cronScheduleInterval = cronExpression.GetNextValidTimeAfter(utcNow) - utcNow;
             if (!cronScheduleInterval.HasValue)
             {
                 var errorMessage = $"Cannot determine next valid scheduled time for cron expression '{schedule.CronSchedule}' for assetId = '{schedule.AssetId}'";
