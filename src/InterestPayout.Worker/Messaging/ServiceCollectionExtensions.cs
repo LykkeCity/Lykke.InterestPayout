@@ -1,8 +1,12 @@
 ﻿using System;
+using GreenPipes;
 using InterestPayout.Common.Configuration;
+using InterestPayout.Common.Domain;
+using InterestPayout.Worker.Messaging.Consumers;
 using MassTransit;
 using MassTransit.RabbitMqTransport;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Swisschain.Extensions.MassTransit;
 
 namespace InterestPayout.Worker.Messaging
@@ -11,15 +15,18 @@ namespace InterestPayout.Worker.Messaging
     {
         public static IServiceCollection AddMessaging(this IServiceCollection services, RabbitMqConfig rabbitMqConfig)
         {
-            // TODO: Register consumers
-            // services.AddTransient<**Consumer>();
+            EndpointConvention.Map<RecurringPayoutCommand>(new Uri("queue:lykke-interest-payout-recurring-payout-consumer"));
 
+            services.AddTransient<RecurringPayoutCommandConsumer>();
+            
             services.AddMassTransit(x =>
             {
                 var schedulerEndpoint = new Uri("queue:lykke-pulsar");
 
                 x.AddMessageScheduler(schedulerEndpoint);
 
+                x.AddConsumer<RecurringPayoutCommandConsumer>();
+                
                 x.UsingRabbitMq((context, cfg) =>
                 {
                     cfg.Host(rabbitMqConfig.HostUrl,
@@ -28,7 +35,7 @@ namespace InterestPayout.Worker.Messaging
                             host.Username(rabbitMqConfig.Username);
                             host.Password(rabbitMqConfig.Password);
                         });
-
+                        
                     cfg.UseMessageScheduler(schedulerEndpoint);
 
                     cfg.UseDefaultRetries(context);
@@ -36,18 +43,20 @@ namespace InterestPayout.Worker.Messaging
                     ConfigureReceivingEndpoints(cfg, context);
                 });
             });
-
+            
             services.AddMassTransitBusHost();
-
+            
             return services;
         }
 
-        private static void ConfigureReceivingEndpoints(IRabbitMqBusFactoryConfigurator configurator,
-            IBusRegistrationContext context)
+        private static void ConfigureReceivingEndpoints(IRabbitMqBusFactoryConfigurator configurator, IBusRegistrationContext context)
         {
-            //TODO register consumer
-            // configurator.ReceiveEndpoint("lykke-interest-payout-concrete-consumer-name",
-            //     endpoint => { endpoint.Consumer(context.GetRequiredService<**Consumer>); });
+             configurator.ReceiveEndpoint("lykke-interest-payout-recurring-payout-consumer",
+                 endpoint =>
+                 {
+                     endpoint.UseConcurrencyLimit(1);
+                     endpoint.Consumer(context.GetRequiredService<RecurringPayoutCommandConsumer>);
+                 });
         }
     }
 }

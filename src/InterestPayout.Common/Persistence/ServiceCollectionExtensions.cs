@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using InterestPayout.Common.Persistence.ReadModels.PayoutSchedules;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +9,7 @@ namespace InterestPayout.Common.Persistence
     {
         public static IServiceCollection AddPersistence(this IServiceCollection services, string connectionString)
         {
-            // TODO: Register repositories
+            services.AddTransient<IPayoutScheduleRepository, PayoutScheduleRepository>();
 
             services.AddSingleton(x =>
             {

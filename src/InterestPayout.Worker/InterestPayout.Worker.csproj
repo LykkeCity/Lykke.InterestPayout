@@ -13,6 +13,9 @@
     <PackageReference Include="MassTransit.Extensions.DependencyInjection" Version="7.3.0" />
     <PackageReference Include="MassTransit.RabbitMQ" Version="7.3.0" />
     <PackageReference Include="Swisschain.Extensions.EfCore" Version="2.0.0" />
+    <PackageReference Include="Swisschain.Extensions.Idempotency" Version="3.0.0" />
+    <PackageReference Include="Swisschain.Extensions.Idempotency.EfCore" Version="3.1.0" />
+    <PackageReference Include="Swisschain.Extensions.Idempotency.MassTransit" Version="4.0.0" />
     <PackageReference Include="Swisschain.Extensions.MassTransit" Version="4.0.1" />
     <PackageReference Include="Swisschain.Sdk.Server" Version="9.1.0" />
   </ItemGroup>
@@ -26,9 +29,5 @@
     <None Update="Dockerfile">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Messaging\Consumers" />
   </ItemGroup>
 </Project>
