@@ -18,6 +18,8 @@ namespace InterestPayout.Common.Persistence
             base.OnConfiguring(optionsBuilder);
 
             optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+
+            optionsBuilder.UseSnakeCaseNamingConvention();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
