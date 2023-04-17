@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssemblyName>Lykke.InterestPayout.TestClient</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\InterestPayout.ApiClient\InterestPayout.ApiClient.csproj" />
+    <ProjectReference Include="..\..\src\InterestPayout.ApiContract\InterestPayout.ApiContract.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: interest-payout-worker
+    environment: Development
+  name: interest-payout-worker
+  namespace: lykke
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: interest-payout-worker
+  sessionAffinity: None
+  type: ClusterIP

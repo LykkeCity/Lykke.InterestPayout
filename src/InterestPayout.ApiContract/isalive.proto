@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option csharp_namespace = "Lykke.InterestPayout.ApiContract";
+
+package common;
+
+service Monitoring {
+	rpc IsAlive (IsAliveRequest) returns (IsAliveResponse);
+}
+
+message IsAliveRequest {
+}
+
+message IsAliveResponse {
+	string name = 1;
+	string version = 2;
+	string startedAt = 3;
+}

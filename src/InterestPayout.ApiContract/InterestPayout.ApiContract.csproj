@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Lykke.InterestPayout.ApiContract</AssemblyName>
+    <PackageId>Lykke.InterestPayout.ApiContract</PackageId>
+    <RootNamespace>Lykke.InterestPayout.ApiContract</RootNamespace>
+    <Authors>Swisschain</Authors>
+    <Product>Lykke</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.19.3" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.41.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.43.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="isalive.proto" />
+  </ItemGroup>
+
+</Project>
