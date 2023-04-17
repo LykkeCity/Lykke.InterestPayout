@@ -5,5 +5,7 @@
         public DbConfig Db { get; set; }
 
         public RabbitMqConfig RabbitMq { get; set; }
+        
+        public Payout[] Payouts { get; set; }
     }
 }

@@ -25,7 +25,6 @@
     <ProjectReference Include="..\..\src\InterestPayout.Common\InterestPayout.Common.csproj" />
     <ProjectReference Include="..\..\src\InterestPayout.MessagingContract\InterestPayout.MessagingContract.csproj" />
     <ProjectReference Include="..\..\src\InterestPayout.Worker\InterestPayout.Worker.csproj" />
-    <ProjectReference Include="..\..\src\InterestPayout\InterestPayout.csproj" />
   </ItemGroup>
 
 </Project>
