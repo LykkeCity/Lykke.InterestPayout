@@ -44,11 +44,11 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
             return entities.ConvertAll(x => ToDomain(x));
         }
         
-        public async Task<PayoutSchedule> GetById(long id)
+        public async Task<PayoutSchedule> GetByIdOrDefault(long id)
         {
             var entity = await _dbContext.PayoutSchedules.SingleOrDefaultAsync(x => x.Id == id);
             if (entity == null)
-                throw new InvalidOperationException($"Cannot find PayoutSchedule with ID = {id}.");
+                return null;
 
             return ToDomain(entity);
         }

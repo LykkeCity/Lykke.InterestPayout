@@ -8,8 +8,9 @@ namespace InterestPayout.Common.Domain
         public string AssetId { get; }
         public decimal InterestRate { get; private set; }
         public string CronSchedule { get; private set; }
+        
         public DateTimeOffset CreatedAt { get; }
-        public DateTimeOffset UpdatedAt { get; }
+        public DateTimeOffset UpdatedAt { get; private set; }
         public uint Version { get; }
         public int Sequence { get; private set; }
 
@@ -75,7 +76,7 @@ namespace InterestPayout.Common.Domain
                 InterestRate = newInterestRate;
                 hasChanges = true;
             }
-
+            
             if (!CronSchedule.Equals(newCronSchedule))
             {
                 CronSchedule = newCronSchedule;
@@ -85,6 +86,7 @@ namespace InterestPayout.Common.Domain
             if (hasChanges)
             {
                 Sequence++;
+                UpdatedAt = DateTimeOffset.UtcNow;
             }
 
             return hasChanges;

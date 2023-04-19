@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using InterestPayout.Common.Configuration;
+using InterestPayout.Common.Domain;
+using InterestPayout.Common.Extensions;
 using InterestPayout.Common.Persistence;
 using InterestPayout.Common.Persistence.ReadModels.PayoutSchedules;
 using MassTransit;
@@ -10,7 +12,7 @@ using MassTransit.Scheduling;
 using Microsoft.Extensions.Logging;
 using Swisschain.Extensions.Idempotency;
 
-namespace InterestPayout.Common.Domain
+namespace InterestPayout.Common.Application
 {
     public class RecurringPayoutsScheduler : IRecurringPayoutsScheduler
     {
@@ -45,7 +47,7 @@ namespace InterestPayout.Common.Domain
             
             foreach (var config in configs)
             {
-                await using var unitOfWork = await _unitOfWorkManager.Begin($"SettingUpSchedules:{config.AssetId}:{DateTimeOffset.Now.Ticks}");
+                await using var unitOfWork = await _unitOfWorkManager.Begin($"SettingUpSchedules:{config.AssetId}:{DateTimeOffset.UtcNow.Ticks}");
                 try
                 {
                     await HandleScheduleInitForConfigEntry(config, unitOfWork.PayoutSchedules);
@@ -68,7 +70,7 @@ namespace InterestPayout.Common.Domain
         private async Task CancelSchedulesNotPresentInConfig(IReadOnlyCollection<PayoutConfig> configs)
         {
             var assets = configs.Select(x => x.AssetId).ToHashSet();
-            await using var unitOfWork = await _unitOfWorkManager.Begin($"CancellingSchedulesNotPresentInCfg:{DateTimeOffset.Now.Ticks}");
+            await using var unitOfWork = await _unitOfWorkManager.Begin($"CancellingSchedulesNotPresentInCfg:{DateTimeOffset.UtcNow.Ticks}");
 
             var schedulesToBeCancelled = await unitOfWork.PayoutSchedules.GetAllExcept(assets);
             _logger.LogInformation("[CleanUp] found {count} schedules in db which are not present in current settings", schedulesToBeCancelled.Count);
@@ -152,11 +154,10 @@ namespace InterestPayout.Common.Domain
         private async Task ScheduleNewRecurringPayout(PayoutSchedule schedule)
         {
             var cronExpression = new Quartz.CronExpression(schedule.CronSchedule);
-            var utcNow = DateTimeOffset.UtcNow;
-            var cronScheduleInterval = cronExpression.GetNextValidTimeAfter(utcNow) - utcNow;
-            if (!cronScheduleInterval.HasValue)
+            var executionInterval = cronExpression.CalculateTimeIntervalBetweenExecutions();
+            if (!executionInterval.HasValue)
             {
-                var errorMessage = $"Cannot determine next valid scheduled time for cron expression '{schedule.CronSchedule}' for assetId = '{schedule.AssetId}'";
+                var errorMessage = $"Cannot determine execution interval for cron expression '{schedule.CronSchedule}' for assetId = '{schedule.AssetId}'";
                 _logger.LogError(errorMessage);
                 throw new InvalidOperationException(errorMessage);
             }
@@ -164,7 +165,7 @@ namespace InterestPayout.Common.Domain
             _logger.LogInformation("Scheduling new recurring message for assetId {@context}", new
             {
                 schedule,
-                CronScheduleInterval = cronScheduleInterval.Value,
+                CronScheduleInterval = executionInterval.Value,
                 CronExpressionSummary = cronExpression.GetExpressionSummary()
             });
             
@@ -182,9 +183,10 @@ namespace InterestPayout.Common.Domain
                 new RecurringPayoutCommand
                 {
                     AssetId = schedule.AssetId,
-                    CronScheduleInterval = cronScheduleInterval.Value,
+                    CronScheduleInterval = executionInterval.Value,
                     InterestRate = schedule.InterestRate,
-                    InternalScheduleId = schedule.Id
+                    InternalScheduleId = schedule.Id,
+                    InternalScheduleSequence = schedule.Sequence,
                 });
         }
 
