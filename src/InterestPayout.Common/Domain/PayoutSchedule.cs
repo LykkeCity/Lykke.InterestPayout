@@ -11,7 +11,7 @@ namespace InterestPayout.Common.Domain
         
         public int Accuracy { get; private set; }
         public DateTimeOffset CreatedAt { get; }
-        public DateTimeOffset UpdatedAt { get; }
+        public DateTimeOffset UpdatedAt { get; private set; }
         public uint Version { get; }
         public int Sequence { get; private set; }
 
@@ -99,6 +99,7 @@ namespace InterestPayout.Common.Domain
             if (hasChanges)
             {
                 Sequence++;
+                UpdatedAt = DateTimeOffset.UtcNow;
             }
 
             return hasChanges;
