@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
+using System.Net.Http;
 using AzureStorage;
 using AzureStorage.Tables;
 using InterestPayout.Common.Configuration;
@@ -7,9 +9,8 @@ using InterestPayout.Common.Persistence.ReadModels.Clients;
 using InterestPayout.Common.Persistence.ReadModels.PayoutSchedules;
 using InterestPayout.Common.Persistence.ReadModels.Wallets;
 using Lykke.Logs;
-using Lykke.Logs.Loggers.LykkeAzureTable;
-using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using Lykke.MatchingEngine.Connector.Services;
+using Lykke.Service.Assets.Client;
 using Lykke.SettingsReader.ReloadingManager;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,6 +65,10 @@ namespace InterestPayout.Common.Persistence
                 tcpMeClient.Start();
                 return tcpMeClient;
             });
+            
+            services.AddSingleton<IAssetsService>(_ => new AssetsService(
+                    new Uri(externalServicesConfig.AssetsService.ServiceUrl),
+                    new HttpClient()));
 
             return services;
         }

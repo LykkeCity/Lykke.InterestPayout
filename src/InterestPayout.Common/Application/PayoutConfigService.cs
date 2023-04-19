@@ -2,17 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using InterestPayout.Common.Configuration;
+using InterestPayout.Common.Extensions;
 
 namespace InterestPayout.Common.Application
 {
     public class PayoutConfigService : IPayoutConfigService
     {
         private readonly PayoutConfig[] _configs;
+        private readonly TimeSpan _smallestPayoutScheduleInterval;
 
-        public PayoutConfigService(PayoutConfig[] configs)
+        public PayoutConfigService(PayoutConfig[] configs, TimeSpan smallestPayoutScheduleInterval)
         {
-            ValidateConfigs(configs);
+            _smallestPayoutScheduleInterval = smallestPayoutScheduleInterval;
             _configs = configs;
+            ValidateConfigs(configs);
         }
 
         public IReadOnlyCollection<PayoutConfig> GetAll()
@@ -20,7 +23,7 @@ namespace InterestPayout.Common.Application
             return _configs;
         }
 
-        private static void ValidateConfigs(PayoutConfig[] configs)
+        private void ValidateConfigs(PayoutConfig[] configs)
         {
             if (configs == null)
                 throw new InvalidOperationException("Payouts were not specified in the configuration.");
@@ -40,11 +43,13 @@ namespace InterestPayout.Common.Application
                 if (!Quartz.CronExpression.IsValidExpression(config.PayoutCronSchedule))
                     throw new InvalidOperationException($"Invalid cron expression ('{config.PayoutCronSchedule}') for assetId '{config.AssetId}'.");
 
-                if (config.Accuracy < 0)
-                    throw new InvalidOperationException($"Accuracy cannot be negative, but was '{config.Accuracy}' for assetId '{config.AssetId}'.");
-                
-                if (config.PayoutInterestRate < decimal.MinusOne)
+                if (config.PayoutInterestRate < -100)
                     throw new InvalidOperationException($"Interest rate cannot be less than minus one hundred percent, but was '{config.PayoutInterestRate}' for assetId '{config.AssetId}'.");
+
+                var scheduleInterval = new Quartz.CronExpression(config.PayoutCronSchedule).CalculateTimeIntervalBetweenExecutions();
+                if (scheduleInterval < _smallestPayoutScheduleInterval)
+                    throw new InvalidOperationException(
+                        $"Scheduled interval for payouts for assetId '{config.AssetId}' is less than minimal allowed interval. Configured value: {scheduleInterval}. Allowed minimum: {_smallestPayoutScheduleInterval}.");
             }
         }
     }

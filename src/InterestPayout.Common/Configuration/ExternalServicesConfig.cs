@@ -9,5 +9,7 @@
         public string BalancesConnectionString { get; set; }
         
         public string MatchingEngineConnectionString { get; set; }
+        
+        public AssetsServiceClientConfig AssetsService { get; set; }
     }
 }

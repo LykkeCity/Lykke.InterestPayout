@@ -1,17 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureStorage;
 using InterestPayout.Common.Application;
 using InterestPayout.Common.Domain;
 using InterestPayout.Common.Persistence;
+using InterestPayout.Common.Persistence.ReadModels.Assets;
 using InterestPayout.Common.Persistence.ReadModels.Balances;
 using InterestPayout.Common.Persistence.ReadModels.Clients;
 using InterestPayout.Common.Persistence.ReadModels.Wallets;
 using Lykke.MatchingEngine.Connector.Models.Api;
 using Lykke.MatchingEngine.Connector.Services;
+using Lykke.Service.Assets.Client;
 using MassTransit;
 using MassTransit.Util;
 using Microsoft.Extensions.Logging;
@@ -27,13 +30,15 @@ namespace InterestPayout.Worker.Messaging.Consumers
         private readonly IBalanceRepository _balanceRepository;
         private readonly TcpMatchingEngineClient _matchingEngineClient;
         private readonly IUnitOfWorkManager<UnitOfWork> _unitOfWorkManager;
+        private readonly IAssetsService _assetsService;
 
         public RecurringPayoutCommandConsumer(ILogger<RecurringPayoutCommandConsumer> logger,
             IWalletRepository walletRepository,
             INoSQLTableStorage<ClientAccountEntity> clientStorage,
             IBalanceRepository balanceRepository,
             TcpMatchingEngineClient matchingEngineClient,
-            IUnitOfWorkManager<UnitOfWork> unitOfWorkManager)
+            IUnitOfWorkManager<UnitOfWork> unitOfWorkManager,
+            IAssetsService assetsService)
         {
             _logger = logger;
             _walletRepository = walletRepository;
@@ -41,10 +46,12 @@ namespace InterestPayout.Worker.Messaging.Consumers
             _balanceRepository = balanceRepository;
             _matchingEngineClient = matchingEngineClient;
             _unitOfWorkManager = unitOfWorkManager;
+            _assetsService = assetsService;
         }
 
         public async Task Consume(ConsumeContext<RecurringPayoutCommand> context)
         {
+            
             var scheduledDateTime = context.Headers.Get<DateTimeOffset>("MT-Quartz-Scheduled");
             if (!scheduledDateTime.HasValue)
                 throw new InvalidOperationException("Cannot obtain original scheduled time from the header 'MT-Quartz-Scheduled'");
@@ -52,10 +59,23 @@ namespace InterestPayout.Worker.Messaging.Consumers
             if (await IsMessageExpired(scheduledDateTime.Value, context.Message))
                 return;
             
+            var assetServiceResponse = await _assetsService.GetAssetWithHttpMessagesAsync(context.Message.AssetId);
+            if (!assetServiceResponse.Response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot get asset information from asset service: {assetServiceResponse.Response.StatusCode}:{assetServiceResponse.Response.ReasonPhrase}");
+            }
+            var assetInfo = await assetServiceResponse.Response.Content.ReadFromJsonAsync<AssetInfo>();
+            _logger.LogInformation("Obtained asset information from asset service {@context}", new
+            {
+                command = context.Message,
+                asset = assetInfo,
+            });
+            
             var partitionKey = ClientAccountEntity.GeneratePartitionKey();
             await _clientStorage.GetDataByChunksAsync(partitionKey, entities =>
             {
-                var clients = entities.ToList();
+                var clients = entities.Where(x => x.Id == "82ec8dce-eb07-4a72-8337-548ac459d7db").ToList();
 
                 _logger.LogInformation("Starting to process chunk of clients (" + clients.Count + ") {@context}", new
                 {
@@ -64,7 +84,10 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 });
                 foreach (var client in clients)
                 {
-                    TaskUtil.Await(ProcessAllWalletsByClient(client.Id, context.Message, scheduledDateTime.Value.ToString("O")));
+                    TaskUtil.Await(ProcessAllWalletsByClient(client.Id,
+                        context.Message,
+                        scheduledDateTime.Value.ToString("O"),
+                        assetInfo.Accuracy));
                 }
                 _logger.LogInformation("Processed chunk of clients (" + clients.Count + ")");
             });
@@ -74,13 +97,16 @@ namespace InterestPayout.Worker.Messaging.Consumers
             });
         }
 
-        private async Task ProcessAllWalletsByClient(string clientId, RecurringPayoutCommand command, string scheduledTimeStamp)
+        private async Task ProcessAllWalletsByClient(string clientId,
+            RecurringPayoutCommand command,
+            string scheduledTimeStamp,
+            int assetAccuracy)
         {
             _logger.LogInformation("Starting processing recurring payout for asset for client {@context}", new
             {
                 ClientId = clientId,
                 command,
-                scheduledTimeStamp
+                scheduledTimeStamp,
             });
 
             var wallets = await _walletRepository.GetAllByClient(clientId);
@@ -104,6 +130,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                     balance,
                     command,
                     scheduledTimeStamp,
+                    assetAccuracy,
                     creditedAmounts);
             }
 
@@ -122,10 +149,11 @@ namespace InterestPayout.Worker.Messaging.Consumers
             ClientBalance balance,
             RecurringPayoutCommand command,
             string scheduledTimestamp,
+            int assetAccuracy,
             List<double> creditedAmounts)
         {
             var idempotencyId = $"{command.AssetId}:{scheduledTimestamp}:{balance.WalletId}";
-            var amount = InterestCalculator.CalculateInterest(balance.Balance, command.InterestRate, command.Accuracy);
+            var amount = InterestCalculator.CalculateInterest(balance.Balance, command.InterestRate, assetAccuracy);
 
             _logger.LogInformation("Attempting to perform payout {@context}", new
             {
@@ -135,8 +163,20 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 command,
                 balance.WalletType,
                 balance.Balance,
-                Amount = amount
+                Amount = amount,
+                AssetAccuracy = assetAccuracy
             });
+
+            if (amount == 0)
+            {
+                _logger.LogInformation("Target payout amount rounded down to zero {@context}", new
+                {
+                    IdempotencyId = idempotencyId,
+                    Amount = amount,
+                    command
+                });
+                return;
+            }
             
             await using var unitOfWork = await _unitOfWorkManager.Begin(idempotencyId);
             if (!unitOfWork.Outbox.IsClosed)
@@ -180,8 +220,6 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         Amount = amount,
                         command
                     });
-                    throw new InvalidOperationException(
-                        $"Unexpected duplication of requests to ME. IdempotencyId: '{idempotencyId}', TransactionId: '{matchingEngineResponse.TransactionId}'");
                 }
                 else if (matchingEngineResponse.Status == MeStatusCodes.InvalidVolumeAccuracy)
                 {

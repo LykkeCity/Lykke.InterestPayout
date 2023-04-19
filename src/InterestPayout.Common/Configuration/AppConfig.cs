@@ -1,4 +1,6 @@
-﻿namespace InterestPayout.Common.Configuration
+﻿using System;
+
+namespace InterestPayout.Common.Configuration
 {
     public class AppConfig
     {
@@ -9,5 +11,7 @@
         public RabbitMqConfig RabbitMq { get; set; }
         
         public PayoutConfig[] Payouts { get; set; }
+        
+        public TimeSpan SmallestPayoutScheduleInterval { get; set; } = TimeSpan.FromHours(23);
     }
 }

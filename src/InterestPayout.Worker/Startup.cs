@@ -29,7 +29,7 @@ namespace InterestPayout.Worker
 
             services
                 .AddHttpClient()
-                .AddSingleton<IPayoutConfigService>(new PayoutConfigService(Config.Payouts))
+                .AddSingleton<IPayoutConfigService>(new PayoutConfigService(Config.Payouts, Config.SmallestPayoutScheduleInterval))
                 .AddTransient<IRecurringPayoutsScheduler, RecurringPayoutsScheduler>()
                 .AddPersistence(Config.Db)
                 .AddExternalDataSources(Config.ExternalServices)

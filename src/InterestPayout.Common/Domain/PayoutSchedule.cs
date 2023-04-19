@@ -9,7 +9,6 @@ namespace InterestPayout.Common.Domain
         public decimal InterestRate { get; private set; }
         public string CronSchedule { get; private set; }
         
-        public int Accuracy { get; private set; }
         public DateTimeOffset CreatedAt { get; }
         public DateTimeOffset UpdatedAt { get; private set; }
         public uint Version { get; }
@@ -19,7 +18,6 @@ namespace InterestPayout.Common.Domain
             string assetId,
             decimal interestRate,
             string cronSchedule,
-            int accuracy,
             DateTimeOffset createdAt,
             DateTimeOffset updatedAt,
             uint version,
@@ -29,7 +27,6 @@ namespace InterestPayout.Common.Domain
             AssetId = assetId;
             InterestRate = interestRate;
             CronSchedule = cronSchedule;
-            Accuracy = accuracy;
             CreatedAt = createdAt;
             UpdatedAt = updatedAt;
             Version = version;
@@ -39,15 +36,13 @@ namespace InterestPayout.Common.Domain
         public static PayoutSchedule Create(long id,
             string assetId,
             decimal interestRate,
-            string cronSchedule,
-            int accuracy)
+            string cronSchedule)
         {
             var now = DateTimeOffset.UtcNow;
             return new PayoutSchedule(id,
                 assetId,
                 interestRate,
                 cronSchedule,
-                accuracy,
                 createdAt: now,
                 updatedAt: now,
                 version: default,
@@ -58,7 +53,6 @@ namespace InterestPayout.Common.Domain
             string assetId,
             decimal interestRate,
             string cronSchedule,
-            int accuracy,
             DateTimeOffset createdAt,
             DateTimeOffset updatedAt,
             uint version,
@@ -68,14 +62,13 @@ namespace InterestPayout.Common.Domain
                 assetId,
                 interestRate,
                 cronSchedule,
-                accuracy,
                 createdAt,
                 updatedAt,
                 version,
                 sequence);
         }
 
-        public bool UpdatePayoutSchedule(decimal newInterestRate, string newCronSchedule, int accuracy)
+        public bool UpdatePayoutSchedule(decimal newInterestRate, string newCronSchedule)
         {
             var hasChanges = false;
             if (newInterestRate != InterestRate)
@@ -84,12 +77,6 @@ namespace InterestPayout.Common.Domain
                 hasChanges = true;
             }
             
-            if (accuracy != Accuracy)
-            {
-                Accuracy = accuracy;
-                hasChanges = true;
-            }
-
             if (!CronSchedule.Equals(newCronSchedule))
             {
                 CronSchedule = newCronSchedule;
