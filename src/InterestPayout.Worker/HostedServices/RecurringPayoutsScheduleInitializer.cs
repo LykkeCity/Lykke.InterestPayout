@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using InterestPayout.Common.Domain;
+using InterestPayout.Common.Application;
 using Microsoft.Extensions.Hosting;
 
 namespace InterestPayout.Worker.HostedServices

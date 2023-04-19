@@ -3,6 +3,8 @@
     public class AppConfig
     {
         public DbConfig Db { get; set; }
+        
+        public ExternalServicesConfig ExternalServices { get; set; }
 
         public RabbitMqConfig RabbitMq { get; set; }
         

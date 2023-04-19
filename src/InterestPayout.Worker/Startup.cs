@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using InterestPayout.Common.Application;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using InterestPayout.Common.Configuration;
 using InterestPayout.Common.Domain;
@@ -30,7 +31,8 @@ namespace InterestPayout.Worker
                 .AddHttpClient()
                 .AddSingleton<IPayoutConfigService>(new PayoutConfigService(Config.Payouts))
                 .AddTransient<IRecurringPayoutsScheduler, RecurringPayoutsScheduler>()
-                .AddPersistence(Config.Db.ConnectionString)
+                .AddPersistence(Config.Db)
+                .AddExternalDataSources(Config.ExternalServices)
                 .AddIdempotency<UnitOfWork>(c =>
                 {
                     c.DispatchWithMassTransit();

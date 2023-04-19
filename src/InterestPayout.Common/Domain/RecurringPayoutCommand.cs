@@ -10,6 +10,10 @@ namespace InterestPayout.Common.Domain
         
         public decimal InterestRate { get; set; }
         
+        public int Accuracy { get; set; }
+        
         public long InternalScheduleId { get; set; }
+        
+        public int InternalScheduleSequence { get; set; }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using InterestPayout.Common.Domain;
+using InterestPayout.Common.Application;
 using InterestPayout.Common.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -33,7 +33,7 @@ namespace InterestPayout.Worker.WebApi
             var persistedSchedules = await unitOfWork.PayoutSchedules.GetAll();
             if (!persistedSchedules.Any())
             {
-                _logger.LogInformation($"Persisted schedules not found. Exiting...");
+                _logger.LogInformation("Persisted schedules not found. Exiting...");
                 return Ok(0);
             }
             _logger.LogInformation($"Found {persistedSchedules.Count} schedules. Purging...");

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using InterestPayout.Common.Configuration;
 
-namespace InterestPayout.Common.Domain
+namespace InterestPayout.Common.Application
 {
     public class PayoutConfigService : IPayoutConfigService
     {
@@ -33,12 +33,18 @@ namespace InterestPayout.Common.Domain
 
             if (duplicates.Any())
                 throw new InvalidOperationException(
-                    $"Payouts settings are duplicate for the following assetIds: {string.Join(',', duplicates)}.");
+                    $"Payout settings are duplicate for the following assetIds: {string.Join(',', duplicates)}.");
 
             foreach (var config in configs)
             {
                 if (!Quartz.CronExpression.IsValidExpression(config.PayoutCronSchedule))
                     throw new InvalidOperationException($"Invalid cron expression ('{config.PayoutCronSchedule}') for assetId '{config.AssetId}'.");
+
+                if (config.Accuracy < 0)
+                    throw new InvalidOperationException($"Accuracy cannot be negative, but was '{config.Accuracy}' for assetId '{config.AssetId}'.");
+                
+                if (config.PayoutInterestRate < decimal.MinusOne)
+                    throw new InvalidOperationException($"Interest rate cannot be less than minus one hundred percent, but was '{config.PayoutInterestRate}' for assetId '{config.AssetId}'.");
             }
         }
     }

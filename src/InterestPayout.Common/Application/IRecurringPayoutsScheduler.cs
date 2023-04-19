@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace InterestPayout.Common.Domain
+namespace InterestPayout.Common.Application
 {
     public interface IRecurringPayoutsScheduler
     {

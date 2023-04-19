@@ -12,6 +12,8 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
         
         public string CronSchedule { get; set; }
         
+        public int Accuracy { get; set; }
+        
         public DateTimeOffset CreatedAt { get; set; }
         
         public DateTimeOffset UpdatedAt { get; set; }

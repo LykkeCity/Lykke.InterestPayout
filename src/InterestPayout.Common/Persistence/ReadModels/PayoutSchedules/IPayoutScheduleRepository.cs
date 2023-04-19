@@ -11,7 +11,7 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
 
         Task Delete(PayoutSchedule payoutSchedule);
         
-        Task<PayoutSchedule> GetById(long id);
+        Task<PayoutSchedule> GetByIdOrDefault(long id);
 
         Task<IReadOnlyCollection<PayoutSchedule>> GetAllExcept(ISet<string> assetIds);
 

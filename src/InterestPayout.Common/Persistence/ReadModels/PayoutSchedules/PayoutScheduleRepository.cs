@@ -44,11 +44,11 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
             return entities.ConvertAll(x => ToDomain(x));
         }
         
-        public async Task<PayoutSchedule> GetById(long id)
+        public async Task<PayoutSchedule> GetByIdOrDefault(long id)
         {
             var entity = await _dbContext.PayoutSchedules.SingleOrDefaultAsync(x => x.Id == id);
             if (entity == null)
-                throw new InvalidOperationException($"Cannot find PayoutSchedule with ID = {id}.");
+                return null;
 
             return ToDomain(entity);
         }
@@ -77,6 +77,7 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
                 entity.AssetId,
                 entity.InterestRate,
                 entity.CronSchedule,
+                entity.Accuracy,
                 entity.CreatedAt,
                 entity.UpdatedAt,
                 entity.Version,
@@ -91,6 +92,7 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
                 AssetId = payoutSchedule.AssetId,
                 InterestRate = payoutSchedule.InterestRate,
                 CronSchedule = payoutSchedule.CronSchedule,
+                Accuracy = payoutSchedule.Accuracy,
                 CreatedAt = payoutSchedule.CreatedAt,
                 UpdatedAt = payoutSchedule.UpdatedAt,
                 Version = payoutSchedule.Version,
