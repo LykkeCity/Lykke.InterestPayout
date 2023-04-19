@@ -75,7 +75,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
             var partitionKey = ClientAccountEntity.GeneratePartitionKey();
             await _clientStorage.GetDataByChunksAsync(partitionKey, entities =>
             {
-                var clients = entities.Where(x => x.Id == "82ec8dce-eb07-4a72-8337-548ac459d7db").ToList();
+                var clients = entities.ToList();
 
                 _logger.LogInformation("Starting to process chunk of clients (" + clients.Count + ") {@context}", new
                 {
