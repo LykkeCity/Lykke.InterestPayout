@@ -1,4 +1,4 @@
-namespace InterestPayout.Common.Persistence.ReadModels.Assets
+namespace InterestPayout.Worker.ExternalResponseModels.Assets
 {
     public class AssetInfo
     {

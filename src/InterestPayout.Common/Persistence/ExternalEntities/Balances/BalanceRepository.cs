@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
 
-namespace InterestPayout.Common.Persistence.ReadModels.Balances
+namespace InterestPayout.Common.Persistence.ExternalEntities.Balances
 {
     public class BalanceRepository : IBalanceRepository
     {

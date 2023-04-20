@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace InterestPayout.Common.Persistence.ReadModels.Balances
+namespace InterestPayout.Common.Persistence.ExternalEntities.Balances
 {
     public interface IBalanceRepository
     {

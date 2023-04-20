@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace InterestPayout.Common.Persistence.ReadModels.Wallets
+namespace InterestPayout.Common.Persistence.ExternalEntities.Wallets
 {
     public interface IWalletRepository
     {

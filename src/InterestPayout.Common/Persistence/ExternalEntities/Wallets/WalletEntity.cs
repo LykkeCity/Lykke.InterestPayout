@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace InterestPayout.Common.Persistence.ReadModels.Wallets
+namespace InterestPayout.Common.Persistence.ExternalEntities.Wallets
 {
     public class WalletEntity : TableEntity
     {

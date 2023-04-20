@@ -8,10 +8,11 @@ using AzureStorage;
 using InterestPayout.Common.Application;
 using InterestPayout.Common.Domain;
 using InterestPayout.Common.Persistence;
-using InterestPayout.Common.Persistence.ReadModels.Assets;
-using InterestPayout.Common.Persistence.ReadModels.Balances;
-using InterestPayout.Common.Persistence.ReadModels.Clients;
-using InterestPayout.Common.Persistence.ReadModels.Wallets;
+using InterestPayout.Common.Persistence.ExternalEntities.Balances;
+using InterestPayout.Common.Persistence.ExternalEntities.Clients;
+using InterestPayout.Common.Persistence.ExternalEntities.Wallets;
+using InterestPayout.Common.Utils;
+using InterestPayout.Worker.ExternalResponseModels.Assets;
 using Lykke.MatchingEngine.Connector.Models.Api;
 using Lykke.MatchingEngine.Connector.Services;
 using Lykke.Service.Assets.Client;
@@ -24,6 +25,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
 {
     public class RecurringPayoutCommandConsumer : IConsumer<RecurringPayoutCommand>
     {
+        private static readonly Guid MatchingEngineFixedNamespace = new Guid("27b5f4ff-13e9-493d-b763-8519c1bbfe47");
+
         private readonly ILogger<RecurringPayoutCommandConsumer> _logger;
         private readonly IWalletRepository _walletRepository;
         private readonly INoSQLTableStorage<ClientAccountEntity> _clientStorage;
@@ -153,11 +156,15 @@ namespace InterestPayout.Worker.Messaging.Consumers
             List<double> creditedAmounts)
         {
             var idempotencyId = $"{command.AssetId}:{scheduledTimestamp}:{balance.WalletId}";
+            // ME can only accept "regular" guids as operationID (idempotency ID),
+            // so we create deterministic GUID, based on longer natural idempotency ID
+            var operationId = NamespaceGuid.Create(MatchingEngineFixedNamespace, idempotencyId, version: 5);
             var amount = InterestCalculator.CalculateInterest(balance.Balance, command.InterestRate, assetAccuracy);
 
             _logger.LogInformation("Attempting to perform payout {@context}", new
             {
                 IdempotencyId = idempotencyId,
+                OperationId = operationId,
                 ClientId = clientId,
                 WalletId = balance.WalletId,
                 command,
@@ -172,6 +179,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 _logger.LogInformation("Target payout amount rounded down to zero {@context}", new
                 {
                     IdempotencyId = idempotencyId,
+                    OperationId = operationId,
                     Amount = amount,
                     command
                 });
@@ -184,7 +192,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 MeResponseModel matchingEngineResponse;
                 try
                 {
-                     matchingEngineResponse = await _matchingEngineClient.CashInOutAsync(idempotencyId,
+                     matchingEngineResponse = await _matchingEngineClient.CashInOutAsync(operationId.ToString(),
                         clientId,
                         command.AssetId,
                         amount,
@@ -200,6 +208,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                     _logger.LogInformation("Successfully issued cashin/cashout request to ME {@context}", new
                     {
                         IdempotencyId = idempotencyId,
+                        OperationId = operationId,
                         matchingEngineResponse.TransactionId,
                         matchingEngineResponse.Message,
                         matchingEngineResponse.Status,
@@ -214,6 +223,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                     _logger.LogError("Unexpected duplication of requests to ME {@context}", new
                     {
                         IdempotencyId = idempotencyId,
+                        OperationId = operationId,
                         matchingEngineResponse.TransactionId,
                         matchingEngineResponse.Message,
                         matchingEngineResponse.Status,
@@ -226,6 +236,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                     _logger.LogError("Interest payout failed because of invalid interest or accuracy settings {@context}", new
                     {
                         IdempotencyId = idempotencyId,
+                        OperationId = operationId,
                         matchingEngineResponse.TransactionId,
                         matchingEngineResponse.Message,
                         matchingEngineResponse.Status,
@@ -240,6 +251,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                     _logger.LogError("Unexpected response from ME {@context}", new
                     {
                         IdempotencyId = idempotencyId,
+                        OperationId = operationId,
                         matchingEngineResponse.TransactionId,
                         matchingEngineResponse.Message,
                         matchingEngineResponse.Status,
@@ -257,8 +269,6 @@ namespace InterestPayout.Worker.Messaging.Consumers
             // if scheduled time is more than one full interval earlier than current timestamp, then it is too old, skipping
             var currentTimeStamp = DateTimeOffset.UtcNow;
             var latestAcceptableExecutionTimeStamp = originalScheduledTimestamp + message.CronScheduleInterval;
-            var needSkip = latestAcceptableExecutionTimeStamp < currentTimeStamp ? "Yes" : "No";
-            _logger.LogInformation($"Need skip? {needSkip}. Scheduled: {originalScheduledTimestamp:T}, latestOkExecution: {latestAcceptableExecutionTimeStamp:T}, now: {currentTimeStamp:T}");
             
             if (latestAcceptableExecutionTimeStamp < currentTimeStamp)
             {

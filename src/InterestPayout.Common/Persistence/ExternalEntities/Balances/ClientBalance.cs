@@ -1,6 +1,6 @@
 using System;
 
-namespace InterestPayout.Common.Persistence.ReadModels.Balances
+namespace InterestPayout.Common.Persistence.ExternalEntities.Balances
 {
     public class ClientBalance
     {
