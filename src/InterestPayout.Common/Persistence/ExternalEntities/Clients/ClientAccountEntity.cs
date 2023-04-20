@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace InterestPayout.Common.Persistence.ReadModels.Clients
+namespace InterestPayout.Common.Persistence.ExternalEntities.Clients
 {
     public class ClientAccountEntity : TableEntity
     {

@@ -1,7 +1,7 @@
 using System;
 using Lykke.AzureStorage.Tables;
 
-namespace InterestPayout.Common.Persistence.ReadModels.Balances
+namespace InterestPayout.Common.Persistence.ExternalEntities.Balances
 {
     public class BalanceEntity : AzureTableEntity
     {

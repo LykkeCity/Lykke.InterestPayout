@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
 
-namespace InterestPayout.Common.Persistence.ReadModels.Wallets
+namespace InterestPayout.Common.Persistence.ExternalEntities.Wallets
 {
     public class WalletRepository : IWalletRepository
     {
