@@ -57,8 +57,8 @@ namespace InterestPayout.Worker
                         return context;
                     });
                 })
-                .AddHostedService<RecurringPayoutsScheduleInitializer>()
-                .AddMessaging(Config.RabbitMq);
+                .AddMessaging(Config.RabbitMq)
+                .AddHostedService<RecurringPayoutsScheduleInitializer>();
         }
     }
 }
