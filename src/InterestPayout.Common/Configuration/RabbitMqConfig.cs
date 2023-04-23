@@ -9,7 +9,5 @@
         public string Username { get; set; }
 
         public string Password { get; set; }
-
-        public ushort GetHostPortOrDefault() => HostPort ?? 5672;
     }
 }
