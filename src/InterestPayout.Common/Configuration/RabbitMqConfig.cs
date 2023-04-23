@@ -4,7 +4,7 @@
     {
         public string HostUrl { get; set; }
         
-        public ushort? HostPort { get; set; }
+        public ushort? Port { get; set; }
 
         public string Username { get; set; }
 

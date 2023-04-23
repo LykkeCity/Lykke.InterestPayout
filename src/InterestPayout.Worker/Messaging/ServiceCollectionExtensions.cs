@@ -28,10 +28,10 @@ namespace InterestPayout.Worker.Messaging
                 
                 x.UsingRabbitMq((context, cfg) =>
                 {
-                    if (rabbitMqConfig.HostPort.HasValue)
+                    if (rabbitMqConfig.Port.HasValue)
                     {
                         cfg.Host(rabbitMqConfig.HostUrl,
-                            port: rabbitMqConfig.HostPort.Value,
+                            port: rabbitMqConfig.Port.Value,
                             virtualHost: "/",
                             host =>
                             {
