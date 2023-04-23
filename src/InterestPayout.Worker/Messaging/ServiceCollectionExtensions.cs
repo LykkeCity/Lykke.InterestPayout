@@ -6,7 +6,6 @@ using InterestPayout.Worker.Messaging.Consumers;
 using MassTransit;
 using MassTransit.RabbitMqTransport;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Swisschain.Extensions.MassTransit;
 
 namespace InterestPayout.Worker.Messaging
@@ -29,13 +28,27 @@ namespace InterestPayout.Worker.Messaging
                 
                 x.UsingRabbitMq((context, cfg) =>
                 {
-                    cfg.Host(rabbitMqConfig.HostUrl,
-                        host =>
-                        {
-                            host.Username(rabbitMqConfig.Username);
-                            host.Password(rabbitMqConfig.Password);
-                        });
-                        
+                    if (rabbitMqConfig.HostPort.HasValue)
+                    {
+                        cfg.Host(rabbitMqConfig.HostUrl,
+                            port: rabbitMqConfig.HostPort.Value,
+                            virtualHost: "/",
+                            host =>
+                            {
+                                host.Username(rabbitMqConfig.Username);
+                                host.Password(rabbitMqConfig.Password);
+                            });
+                    }
+                    else
+                    {
+                        cfg.Host(rabbitMqConfig.HostUrl,
+                            host =>
+                            {
+                                host.Username(rabbitMqConfig.Username);
+                                host.Password(rabbitMqConfig.Password);
+                            });
+                    }
+
                     cfg.UseMessageScheduler(schedulerEndpoint);
 
                     cfg.UseDefaultRetries(context);

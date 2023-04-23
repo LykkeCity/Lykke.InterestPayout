@@ -3,6 +3,8 @@
     public class RabbitMqConfig
     {
         public string HostUrl { get; set; }
+        
+        public ushort? HostPort { get; set; }
 
         public string Username { get; set; }
 
