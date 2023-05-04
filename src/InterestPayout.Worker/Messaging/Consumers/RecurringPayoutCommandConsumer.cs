@@ -66,7 +66,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
             if (!assetServiceResponse.Response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(
-                    $"Cannot get asset information from asset '{context.Message.PayoutAssetId}' service: {assetServiceResponse.Response.StatusCode}:{assetServiceResponse.Response.ReasonPhrase}");
+                    $"Cannot get asset information from asset service for asset '{context.Message.PayoutAssetId}': {assetServiceResponse.Response.StatusCode}:{assetServiceResponse.Response.ReasonPhrase}");
             }
             var assetInfo = await assetServiceResponse.Response.Content.ReadFromJsonAsync<AssetInfo>();
             _logger.LogInformation("Obtained asset information from asset service {@context}", new
