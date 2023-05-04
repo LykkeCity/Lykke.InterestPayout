@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Json;
@@ -62,11 +62,11 @@ namespace InterestPayout.Worker.Messaging.Consumers
             if (await IsMessageExpired(scheduledDateTime.Value, context.Message))
                 return;
             
-            var assetServiceResponse = await _assetsService.GetAssetWithHttpMessagesAsync(context.Message.AssetId);
+            var assetServiceResponse = await _assetsService.GetAssetWithHttpMessagesAsync(context.Message.PayoutAssetId);
             if (!assetServiceResponse.Response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(
-                    $"Cannot get asset information from asset service: {assetServiceResponse.Response.StatusCode}:{assetServiceResponse.Response.ReasonPhrase}");
+                    $"Cannot get asset information from asset '{context.Message.PayoutAssetId}' service: {assetServiceResponse.Response.StatusCode}:{assetServiceResponse.Response.ReasonPhrase}");
             }
             var assetInfo = await assetServiceResponse.Response.Content.ReadFromJsonAsync<AssetInfo>();
             _logger.LogInformation("Obtained asset information from asset service {@context}", new
@@ -194,7 +194,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 {
                      matchingEngineResponse = await _matchingEngineClient.CashInOutAsync(operationId.ToString(),
                         clientId,
-                        command.AssetId,
+                        command.PayoutAssetId,
                         amount,
                         new CancellationTokenSource(TimeSpan.FromMinutes(2)).Token);
                 }

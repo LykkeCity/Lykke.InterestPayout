@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using InterestPayout.Common.Configuration;
@@ -40,6 +40,9 @@ namespace InterestPayout.Common.Application
 
             foreach (var config in configs)
             {
+                if (string.IsNullOrWhiteSpace(config.PayoutAssetId))
+                    throw new InvalidOperationException($"Payout asset ID should be specified for the assetId {config.AssetId}");
+
                 if (!Quartz.CronExpression.IsValidExpression(config.PayoutCronSchedule))
                     throw new InvalidOperationException($"Invalid cron expression ('{config.PayoutCronSchedule}') for assetId '{config.AssetId}'.");
 
