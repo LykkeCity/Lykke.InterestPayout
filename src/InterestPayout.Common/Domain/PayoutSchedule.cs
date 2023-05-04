@@ -6,7 +6,7 @@ namespace InterestPayout.Common.Domain
     {
         public long Id { get; }
         public string AssetId { get; }
-        public string PayoutAssetId { get; }
+        public string PayoutAssetId { get; private set; }
         public decimal InterestRate { get; private set; }
         public string CronSchedule { get; private set; }
         
