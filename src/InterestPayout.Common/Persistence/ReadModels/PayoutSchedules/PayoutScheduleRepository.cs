@@ -75,6 +75,7 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
         {
             return PayoutSchedule.Restore(entity.Id,
                 entity.AssetId,
+                entity.PayoutAssetId,
                 entity.InterestRate,
                 entity.CronSchedule,
                 entity.CreatedAt,
@@ -89,6 +90,7 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
             {
                 Id = payoutSchedule.Id,
                 AssetId = payoutSchedule.AssetId,
+                PayoutAssetId = payoutSchedule.PayoutAssetId,
                 InterestRate = payoutSchedule.InterestRate,
                 CronSchedule = payoutSchedule.CronSchedule,
                 CreatedAt = payoutSchedule.CreatedAt,

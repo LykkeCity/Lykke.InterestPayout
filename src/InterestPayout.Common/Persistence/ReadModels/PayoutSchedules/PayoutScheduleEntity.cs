@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
 {
@@ -7,6 +7,8 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
         public long Id { get; set; }
         
         public string AssetId { get; set; }
+
+        public string PayoutAssetId { get; set; }
         
         public decimal InterestRate { get; set; }
         

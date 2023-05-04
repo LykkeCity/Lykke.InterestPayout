@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace InterestPayout.Common.Domain
 {
@@ -6,6 +6,7 @@ namespace InterestPayout.Common.Domain
     {
         public long Id { get; }
         public string AssetId { get; }
+        public string PayoutAssetId { get; }
         public decimal InterestRate { get; private set; }
         public string CronSchedule { get; private set; }
         
@@ -16,6 +17,7 @@ namespace InterestPayout.Common.Domain
 
         private PayoutSchedule(long id,
             string assetId,
+            string payoutAssetId,
             decimal interestRate,
             string cronSchedule,
             DateTimeOffset createdAt,
@@ -25,6 +27,7 @@ namespace InterestPayout.Common.Domain
         {
             Id = id;
             AssetId = assetId;
+            PayoutAssetId = payoutAssetId;
             InterestRate = interestRate;
             CronSchedule = cronSchedule;
             CreatedAt = createdAt;
@@ -35,12 +38,14 @@ namespace InterestPayout.Common.Domain
 
         public static PayoutSchedule Create(long id,
             string assetId,
+            string payoutAssetId,
             decimal interestRate,
             string cronSchedule)
         {
             var now = DateTimeOffset.UtcNow;
             return new PayoutSchedule(id,
                 assetId,
+                payoutAssetId,
                 interestRate,
                 cronSchedule,
                 createdAt: now,
@@ -51,6 +56,7 @@ namespace InterestPayout.Common.Domain
 
         public static PayoutSchedule Restore(long id,
             string assetId,
+            string payoutAssetId,
             decimal interestRate,
             string cronSchedule,
             DateTimeOffset createdAt,
@@ -60,6 +66,7 @@ namespace InterestPayout.Common.Domain
         {
             return new PayoutSchedule(id,
                 assetId,
+                payoutAssetId,
                 interestRate,
                 cronSchedule,
                 createdAt,
@@ -68,9 +75,16 @@ namespace InterestPayout.Common.Domain
                 sequence);
         }
 
-        public bool UpdatePayoutSchedule(decimal newInterestRate, string newCronSchedule)
+        public bool UpdatePayoutSchedule(string newPayoutAssetId, decimal newInterestRate, string newCronSchedule)
         {
             var hasChanges = false;
+
+            if(newPayoutAssetId != PayoutAssetId)
+            {
+                PayoutAssetId = newPayoutAssetId;
+                hasChanges = true;
+            }
+
             if (newInterestRate != InterestRate)
             {
                 InterestRate = newInterestRate;

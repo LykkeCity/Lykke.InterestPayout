@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -105,6 +105,7 @@ namespace InterestPayout.Common.Application
                 var newScheduleId = await _idGenerator.GetId(config.AssetId, IdGenerators.PayoutSchedules);
                 schedule = PayoutSchedule.Create(newScheduleId,
                     config.AssetId,
+                    config.PayoutAssetId,
                     config.PayoutInterestRate,
                     config.PayoutCronSchedule);
                 await payoutScheduleRepository.Add(schedule);
@@ -112,7 +113,7 @@ namespace InterestPayout.Common.Application
             }
             else
             {
-                var hasChanges = schedule.UpdatePayoutSchedule(config.PayoutInterestRate, config.PayoutCronSchedule);
+                var hasChanges = schedule.UpdatePayoutSchedule(config.PayoutAssetId, config.PayoutInterestRate, config.PayoutCronSchedule);
                 if (hasChanges)
                 {
                     _logger.LogInformation("[Init]: found existing schedule, updating {@context}", new
@@ -183,6 +184,7 @@ namespace InterestPayout.Common.Application
                 new RecurringPayoutCommand
                 {
                     AssetId = schedule.AssetId,
+                    PayoutAssetId = schedule.PayoutAssetId,
                     CronScheduleInterval = executionInterval.Value,
                     InterestRate = schedule.InterestRate,
                     InternalScheduleId = schedule.Id,
