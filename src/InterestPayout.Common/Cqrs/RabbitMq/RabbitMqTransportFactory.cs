@@ -10,6 +10,10 @@ namespace InterestPayout.Common.Cqrs.RabbitMq
 {
     /// <summary>
     /// Implementation of <see cref="ITransportFactory"/> interface for RabbitMQ
+    /// 
+    /// Most of this code was copied from Lykke.Messaging.RabbitMq.
+    /// Some modifications were made to account for newer RabbitMq.Client library.
+    /// For more info see https://github.com/LykkeCity/Lykke.Messaging/
     /// </summary>
     public class RabbitMqTransportFactory : ITransportFactory
     {

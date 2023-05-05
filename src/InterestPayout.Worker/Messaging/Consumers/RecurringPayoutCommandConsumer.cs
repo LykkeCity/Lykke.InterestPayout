@@ -246,6 +246,17 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         Amount = amount,
                         command
                     });
+                    _cqrsEngine.PublishEvent(
+                        new PayoutCompletedEvent
+                        {
+                            OperationId = operationId.ToString(),
+                            PayoutAssetId = command.PayoutAssetId,
+                            AssetId = command.AssetId,
+                            ClientId = clientId,
+                            WalletId = balance.WalletId,
+                            Amount = Convert.ToDecimal(amount)
+                        },
+                        InterestPayoutBoundedContext.Name);
                 }
                 else if (matchingEngineResponse.Status == MeStatusCodes.InvalidVolumeAccuracy)
                 {

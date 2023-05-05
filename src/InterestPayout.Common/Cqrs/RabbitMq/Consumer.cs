@@ -6,6 +6,11 @@ using RabbitMQ.Client;
 
 namespace InterestPayout.Common.Cqrs.RabbitMq
 {
+    /// <summary>
+    /// Most of this code was copied from Lykke.Messaging.RabbitMq.
+    /// Some modifications were made to account for newer RabbitMq.Client library.
+    /// For more info see https://github.com/LykkeCity/Lykke.Messaging/
+    /// </summary>
     internal class Consumer : DefaultBasicConsumer, IDisposable
     {
         private readonly ILog _log;
