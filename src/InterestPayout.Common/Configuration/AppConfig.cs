@@ -7,6 +7,8 @@ namespace InterestPayout.Common.Configuration
         public DbConfig Db { get; set; }
         
         public ExternalServicesConfig ExternalServices { get; set; }
+        
+        public AzureConfig Azure { get; set; }
 
         public RabbitMqConfig RabbitMq { get; set; }
         

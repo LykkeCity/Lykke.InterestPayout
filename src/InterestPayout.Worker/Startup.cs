@@ -3,10 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using InterestPayout.Common.Configuration;
 using InterestPayout.Common.Domain;
+using InterestPayout.Common.Extensions;
 using InterestPayout.Common.Persistence;
 using InterestPayout.Worker.HostedServices;
 using InterestPayout.Worker.Messaging;
 using InterestPayout.Worker.Messaging.Consumers;
+using Lykke.Logs;
+using Lykke.SettingsReader;
 using Swisschain.Extensions.EfCore;
 using Swisschain.Sdk.Server.Common;
 using Microsoft.EntityFrameworkCore;
@@ -27,8 +30,16 @@ namespace InterestPayout.Worker
         {
             base.ConfigureServicesExt(services);
 
+            var reloadingManagerSettings = ConfigRoot.LoadSettings();
+            
             services
                 .AddHttpClient()
+                .AddLykkeLogging(
+                    reloadingManagerSettings.ConnectionString(x => x.Azure.LogConnectionString),
+                    "InterestPayout",
+                    Config.Azure.SlackConnString,
+                    Config.Azure.SlackNotificationsQueue)
+                .AddLykkeCqrs(Config.RabbitMq)
                 .AddSingleton<IPayoutConfigService>(new PayoutConfigService(Config.Payouts, Config.SmallestPayoutScheduleInterval))
                 .AddTransient<IRecurringPayoutsScheduler, RecurringPayoutsScheduler>()
                 .AddPersistence(Config.Db)
@@ -58,6 +69,7 @@ namespace InterestPayout.Worker
                     });
                 })
                 .AddMessaging(Config.RabbitMq)
+                .AddHostedService<CqrsMessagingInitializer>()
                 .AddHostedService<RecurringPayoutsScheduleInitializer>();
         }
     }

@@ -13,6 +13,8 @@ using InterestPayout.Common.Persistence.ExternalEntities.Clients;
 using InterestPayout.Common.Persistence.ExternalEntities.Wallets;
 using InterestPayout.Common.Utils;
 using InterestPayout.Worker.ExternalResponseModels.Assets;
+using Lykke.Cqrs;
+using Lykke.InterestPayout.MessagingContract;
 using Lykke.MatchingEngine.Connector.Models.Api;
 using Lykke.MatchingEngine.Connector.Services;
 using Lykke.Service.Assets.Client;
@@ -34,6 +36,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
         private readonly TcpMatchingEngineClient _matchingEngineClient;
         private readonly IUnitOfWorkManager<UnitOfWork> _unitOfWorkManager;
         private readonly IAssetsService _assetsService;
+        private readonly ICqrsEngine _cqrsEngine;
 
         public RecurringPayoutCommandConsumer(ILogger<RecurringPayoutCommandConsumer> logger,
             IWalletRepository walletRepository,
@@ -41,7 +44,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
             IBalanceRepository balanceRepository,
             TcpMatchingEngineClient matchingEngineClient,
             IUnitOfWorkManager<UnitOfWork> unitOfWorkManager,
-            IAssetsService assetsService)
+            IAssetsService assetsService,
+            ICqrsEngine cqrsEngine)
         {
             _logger = logger;
             _walletRepository = walletRepository;
@@ -50,6 +54,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
             _matchingEngineClient = matchingEngineClient;
             _unitOfWorkManager = unitOfWorkManager;
             _assetsService = assetsService;
+            _cqrsEngine = cqrsEngine;
         }
 
         public async Task Consume(ConsumeContext<RecurringPayoutCommand> context)
@@ -216,6 +221,17 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         command
                     });
                     await unitOfWork.Commit();
+                    _cqrsEngine.PublishEvent(
+                        new PayoutCompletedEvent
+                        {
+                            OperationId = operationId.ToString(),
+                            PayoutAssetId = command.PayoutAssetId,
+                            AssetId = command.AssetId,
+                            ClientId = clientId,
+                            WalletId = balance.WalletId,
+                            Amount = Convert.ToDecimal(amount)
+                        },
+                        InterestPayoutBoundedContext.Name);
                     creditedAmounts.Add(amount);
                 }
                 else if (matchingEngineResponse.Status == MeStatusCodes.Duplicate)

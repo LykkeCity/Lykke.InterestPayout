@@ -11,7 +11,8 @@ namespace InterestPayout.Common.Application
         private readonly PayoutConfig[] _configs;
         private readonly TimeSpan _smallestPayoutScheduleInterval;
 
-        public PayoutConfigService(PayoutConfig[] configs, TimeSpan smallestPayoutScheduleInterval)
+        public PayoutConfigService(PayoutConfig[] configs,
+            TimeSpan smallestPayoutScheduleInterval)
         {
             _smallestPayoutScheduleInterval = smallestPayoutScheduleInterval;
             _configs = configs;
