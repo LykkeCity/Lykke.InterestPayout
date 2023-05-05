@@ -21,6 +21,10 @@ namespace InterestPayout.Worker
 
             var remoteSettingsConfig = ApplicationEnvironment.Config.Get<RemoteSettingsConfig>();
 
+            foreach (var remoteSettingUrl in remoteSettingsConfig.RemoteSettingsUrls)
+            {
+                Console.WriteLine(remoteSettingUrl);
+            }
             using var loggerFactory = LogConfigurator.Configure("Lykke",
                 remoteSettingsConfig.RemoteSettingsUrls ?? Array.Empty<string>());
 
