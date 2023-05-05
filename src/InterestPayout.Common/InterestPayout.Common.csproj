@@ -9,8 +9,11 @@
     <PackageReference Include="EFCore.NamingConventions" Version="5.0.2" />
     <PackageReference Include="Lykke.AzureStorage" Version="8.13.4" />
     <PackageReference Include="Lykke.Common.ApiLibrary" Version="3.1.1" />
+    <PackageReference Include="Lykke.Cqrs" Version="9.0.1" />
     <PackageReference Include="Lykke.Logs" Version="7.4.0" />
     <PackageReference Include="Lykke.MatchingEngineConnector" Version="8.7.2" />
+    <PackageReference Include="Lykke.Messaging" Version="6.3.1" />
+    <PackageReference Include="Lykke.Messaging.RabbitMq" Version="2.2.2" />
     <PackageReference Include="Lykke.Service.Assets.Client" Version="5.2.1" />
     <PackageReference Include="Lykke.Service.ClientAccount.Client" Version="4.6.0" />
     <PackageReference Include="MassTransit" Version="7.3.0" />
@@ -29,9 +32,18 @@
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.10" />
     <PackageReference Include="Quartz" Version="3.6.2" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.5.0" />
     <PackageReference Include="Swisschain.Extensions.Idempotency" Version="3.0.0" />
     <PackageReference Include="Swisschain.Extensions.Idempotency.EfCore" Version="3.1.0" />
     <PackageReference Include="WindowsAzure.Storage" Version="9.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\InterestPayout.MessagingContract\InterestPayout.MessagingContract.csproj" />
   </ItemGroup>
 
 </Project>

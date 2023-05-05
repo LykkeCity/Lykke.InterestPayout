@@ -8,7 +8,7 @@ namespace InterestPayout.Worker.HostedServices
     public class RecurringPayoutsScheduleInitializer : IHostedService
     {
         private readonly IRecurringPayoutsScheduler _recurringPayoutsScheduler;
-        
+
         public RecurringPayoutsScheduleInitializer(IRecurringPayoutsScheduler recurringPayoutsScheduler)
         {
             _recurringPayoutsScheduler = recurringPayoutsScheduler;
