@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>Lykke.InterestPayout.MessagingContract</AssemblyName>
     <PackageId>Lykke.InterestPayout.MessagingContract</PackageId>
     <RootNamespace>Lykke.InterestPayout.MessagingContract</RootNamespace>
     <Authors>Lykke</Authors>
     <Product>Lykke</Product>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
