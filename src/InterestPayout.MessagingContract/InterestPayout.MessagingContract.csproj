@@ -6,7 +6,7 @@
     <RootNamespace>Lykke.InterestPayout.MessagingContract</RootNamespace>
     <Authors>Lykke</Authors>
     <Product>Lykke</Product>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
