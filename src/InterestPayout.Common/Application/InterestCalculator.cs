@@ -1,4 +1,5 @@
 using System;
+using Common;
 
 namespace InterestPayout.Common.Application
 {
@@ -37,38 +38,6 @@ namespace InterestPayout.Common.Application
             var decimalAmount = decimal.Multiply(balance, interest);
             var roundedDecimalAmount = decimalAmount.TruncateDecimalPlaces(accuracy);
             return Convert.ToDouble(roundedDecimalAmount);
-        }
-        
-        public static double TruncateDecimalPlaces(this double value, int places, bool toUpper = false)
-        {
-            const double roundingError = 1E-10;
-            var d = (decimal)value;
-            var placesPow = (decimal)Math.Pow(10, places);
-            var truncated = (double)(decimal.Truncate(d * placesPow) / placesPow);
-
-            if (toUpper && value - truncated > roundingError)
-            {
-                truncated += Math.Pow(10, -places);
-                truncated = truncated.TruncateDecimalPlaces(places);
-            }
-
-            return truncated;
-        }
-
-        public static decimal TruncateDecimalPlaces(this decimal value, int places, bool toUpper = false)
-        {
-            const decimal roundingError = 1E-10M;
-            var d = value;
-            var placesPow = (decimal)Math.Pow(10, places);
-            var truncated = decimal.Truncate(d * placesPow) / placesPow;
-
-            if (toUpper && value - truncated > roundingError)
-            {
-                truncated += (decimal)Math.Pow(10, -places);
-                truncated = truncated.TruncateDecimalPlaces(places);
-            }
-
-            return truncated;
         }
     }
 }

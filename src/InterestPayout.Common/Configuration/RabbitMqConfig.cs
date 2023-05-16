@@ -2,6 +2,8 @@
 {
     public class RabbitMqConfig
     {
+        public string CqrsConnString { get; set; }
+        
         public string HostUrl { get; set; }
         
         public ushort? Port { get; set; }

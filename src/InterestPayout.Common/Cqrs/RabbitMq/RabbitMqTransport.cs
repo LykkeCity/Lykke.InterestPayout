@@ -145,11 +145,15 @@ namespace InterestPayout.Common.Cqrs.RabbitMq
                 try
                 {
                     var connection = m_Factories[i].CreateConnection($"{_appName} {_appVersion} {destination}");
+
                     if (logConnection)
+                    {
                         _log.WriteInfo(
                             nameof(RabbitMqTransport),
                             nameof(CreateConnection),
                             $"Created rmq connection to {m_Factories[i].Endpoint.HostName} {destination}.");
+                    }
+                    
                     return connection;
                 }
                 catch (Exception e)
