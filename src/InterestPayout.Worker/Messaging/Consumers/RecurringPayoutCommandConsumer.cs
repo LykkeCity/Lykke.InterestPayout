@@ -206,7 +206,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 try
                 {
                      matchingEngineResponse = await _matchingEngineClient.CashInOutAsync(operationId.ToString(),
-                        clientId,
+                        walletId,
                         command.PayoutAssetId,
                         amount,
                         new CancellationTokenSource(TimeSpan.FromMinutes(2)).Token);

@@ -25,8 +25,6 @@ namespace InterestPayout.Common.Extensions
             if (string.IsNullOrWhiteSpace(rabbitMqConfig?.CqrsConnString))
                 throw new InvalidOperationException("RabbitMq.CqrsConnString is required.");
             
-            Console.WriteLine(rabbitMqConfig?.CqrsConnString);
-            
             var rabbitMqCqrsSettings = new RabbitMQ.Client.ConnectionFactory { Uri = new Uri(rabbitMqConfig.CqrsConnString) };
             serviceCollection.AddSingleton<IMessagingEngine>(c => new MessagingEngine(
                 c.GetService<ILogFactory>(),
