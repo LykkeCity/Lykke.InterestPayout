@@ -4,13 +4,9 @@ using System.Linq;
 using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureStorage;
 using InterestPayout.Common.Application;
 using InterestPayout.Common.Domain;
 using InterestPayout.Common.Persistence;
-using InterestPayout.Common.Persistence.ExternalEntities.Balances;
-using InterestPayout.Common.Persistence.ExternalEntities.Clients;
-using InterestPayout.Common.Persistence.ExternalEntities.Wallets;
 using InterestPayout.Common.Utils;
 using InterestPayout.Worker.ExternalResponseModels.Assets;
 using Lykke.Cqrs;
@@ -18,10 +14,14 @@ using Lykke.InterestPayout.MessagingContract;
 using Lykke.MatchingEngine.Connector.Models.Api;
 using Lykke.MatchingEngine.Connector.Services;
 using Lykke.Service.Assets.Client;
+using Lykke.Service.Balances.AutorestClient.Models;
+using Lykke.Service.Balances.Client;
+using Lykke.Service.ClientAccount.Client;
+using Lykke.Service.ClientAccount.Client.Models.Response.Wallets;
 using MassTransit;
-using MassTransit.Util;
 using Microsoft.Extensions.Logging;
 using Swisschain.Extensions.Idempotency;
+using WalletType = Lykke.Service.ClientAccount.Client.Models.WalletType;
 
 namespace InterestPayout.Worker.Messaging.Consumers
 {
@@ -30,31 +30,28 @@ namespace InterestPayout.Worker.Messaging.Consumers
         private static readonly Guid MatchingEngineFixedNamespace = new Guid("27b5f4ff-13e9-493d-b763-8519c1bbfe47");
 
         private readonly ILogger<RecurringPayoutCommandConsumer> _logger;
-        private readonly IWalletRepository _walletRepository;
-        private readonly INoSQLTableStorage<ClientAccountEntity> _clientStorage;
-        private readonly IBalanceRepository _balanceRepository;
         private readonly TcpMatchingEngineClient _matchingEngineClient;
         private readonly IUnitOfWorkManager<UnitOfWork> _unitOfWorkManager;
         private readonly IAssetsService _assetsService;
         private readonly ICqrsEngine _cqrsEngine;
+        private readonly IClientAccountClient _clientAccountClient;
+        private readonly IBalancesClient _balancesClient;
 
         public RecurringPayoutCommandConsumer(ILogger<RecurringPayoutCommandConsumer> logger,
-            IWalletRepository walletRepository,
-            INoSQLTableStorage<ClientAccountEntity> clientStorage,
-            IBalanceRepository balanceRepository,
             TcpMatchingEngineClient matchingEngineClient,
             IUnitOfWorkManager<UnitOfWork> unitOfWorkManager,
             IAssetsService assetsService,
-            ICqrsEngine cqrsEngine)
+            ICqrsEngine cqrsEngine,
+            IClientAccountClient clientAccountClient,
+            IBalancesClient balancesClient)
         {
             _logger = logger;
-            _walletRepository = walletRepository;
-            _clientStorage = clientStorage;
-            _balanceRepository = balanceRepository;
             _matchingEngineClient = matchingEngineClient;
             _unitOfWorkManager = unitOfWorkManager;
             _assetsService = assetsService;
             _cqrsEngine = cqrsEngine;
+            _clientAccountClient = clientAccountClient;
+            _balancesClient = balancesClient;
         }
 
         public async Task Consume(ConsumeContext<RecurringPayoutCommand> context)
@@ -80,25 +77,32 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 asset = assetInfo,
             });
             
-            var partitionKey = ClientAccountEntity.GeneratePartitionKey();
-            await _clientStorage.GetDataByChunksAsync(partitionKey, entities =>
+            string continuationToken = null;
+            var chunkIndex = 0;
+            do
             {
-                var clients = entities.Where(x => x.Id == "82ec8dce-eb07-4a72-8337-548ac459d7db").ToList();
+                var ids = await _clientAccountClient.Clients.GetIdsAsync(continuationToken);
+                continuationToken = ids?.ContinuationToken;
+                if (ids == null)
+                    break;
 
-                _logger.LogInformation("Starting to process chunk of clients (" + clients.Count + ") {@context}", new
+                var clients = ids.Ids.ToList();
+                
+                _logger.LogInformation("Starting to process chunk with index" + chunkIndex + " of clients (" + clients.Count + ") {@context}", new
                 {
                     command = context.Message,
                     context.Message.AssetId
                 });
                 foreach (var client in clients)
                 {
-                    TaskUtil.Await(ProcessAllWalletsByClient(client.Id,
+                    await ProcessAllWalletsByClient(client,
                         context.Message,
                         scheduledDateTime.Value.ToString("O"),
-                        assetInfo.Accuracy));
+                        assetInfo.Accuracy);
                 }
-                _logger.LogInformation("Processed chunk of clients (" + clients.Count + ")");
-            });
+                _logger.LogInformation($"Processed chunk index {chunkIndex} of clients ({clients.Count})");
+                chunkIndex++;
+            } while (continuationToken != null);
             _logger.LogInformation("Finished processing all chunks {@context}", new
             {
                 context.Message
@@ -116,32 +120,36 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 command,
                 scheduledTimeStamp,
             });
-
-            var wallets = await _walletRepository.GetAllByClient(clientId);
             
-            _logger.LogDebug($"Found {wallets.Count} wallets for client '{clientId}'.");
+            var wallets = await _clientAccountClient.Wallets.GetClientWalletsFilteredAsync(clientId);
+            
+            _logger.LogDebug($"Found {wallets.Count()} wallets for client '{clientId}'.");
             if (!wallets.Any())
                 return;
             
-            var walletIds = wallets.Select(x => x.Id).ToArray();
-            var balances = await _balanceRepository.GetBalances(clientId, walletIds, command.AssetId);
-            if (!balances.Any())
-            {
-                _logger.LogDebug($"Not found any non-zero balances for client '{clientId}' and assetId '{command.AssetId}'.");
-                return;
-            }
-
             var creditedAmounts = new List<double>();
-            foreach (var balance in balances)
+            foreach (var wallet in wallets)
             {
-                await ProcessWallet(clientId,
-                    balance,
-                    command,
-                    scheduledTimeStamp,
-                    assetAccuracy,
-                    creditedAmounts);
+                _logger.LogDebug(
+                    $"Checking balance for wallet {wallet.Id}:{wallet.Type} for asset {command.AssetId}");
+                var balance = await GetWalletBalance(wallet, command.AssetId);
+                if (balance != null)
+                {
+                    await ProcessWallet(clientId,
+                        balance.WalletId,
+                        balance.Balance,
+                        command,
+                        scheduledTimeStamp,
+                        assetAccuracy,
+                        creditedAmounts);
+                }
+                else
+                {
+                    _logger.LogDebug(
+                        $"Balance for wallet {wallet.Id}:{wallet.Type} for asset {command.AssetId} was not found");
+                }
             }
-
+            
             var totalCreditedAmount = creditedAmounts.Sum();
             var numberOfCashInOutOperations = creditedAmounts.Count;
             _logger.LogInformation("Finished processing recurring payout for client {@context}", new
@@ -154,27 +162,27 @@ namespace InterestPayout.Worker.Messaging.Consumers
         }
 
         private async Task ProcessWallet(string clientId,
-            ClientBalance balance,
+            string walletId,
+            decimal balance,
             RecurringPayoutCommand command,
             string scheduledTimestamp,
             int assetAccuracy,
             List<double> creditedAmounts)
         {
-            var idempotencyId = $"{command.AssetId}:{scheduledTimestamp}:{balance.WalletId}";
+            var idempotencyId = $"{command.AssetId}:{scheduledTimestamp}:{walletId}";
             // ME can only accept "regular" guids as operationID (idempotency ID),
             // so we create deterministic GUID, based on longer natural idempotency ID
             var operationId = NamespaceGuid.Create(MatchingEngineFixedNamespace, idempotencyId, version: 5);
-            var amount = InterestCalculator.CalculateInterest(balance.Balance, command.InterestRate, assetAccuracy);
+            var amount = InterestCalculator.CalculateInterest(balance, command.InterestRate, assetAccuracy);
 
             _logger.LogInformation("Attempting to perform payout {@context}", new
             {
                 IdempotencyId = idempotencyId,
                 OperationId = operationId,
                 ClientId = clientId,
-                WalletId = balance.WalletId,
+                WalletId = walletId,
                 command,
-                balance.WalletType,
-                balance.Balance,
+                balance,
                 Amount = amount,
                 AssetAccuracy = assetAccuracy
             });
@@ -228,7 +236,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                             PayoutAssetId = command.PayoutAssetId,
                             AssetId = command.AssetId,
                             ClientId = clientId,
-                            WalletId = balance.WalletId,
+                            WalletId = walletId,
                             Amount = Convert.ToDecimal(amount)
                         },
                         InterestPayoutBoundedContext.Name);
@@ -253,7 +261,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                             PayoutAssetId = command.PayoutAssetId,
                             AssetId = command.AssetId,
                             ClientId = clientId,
-                            WalletId = balance.WalletId,
+                            WalletId = walletId,
                             Amount = Convert.ToDecimal(amount)
                         },
                         InterestPayoutBoundedContext.Name);
@@ -347,5 +355,32 @@ namespace InterestPayout.Worker.Messaging.Consumers
 
             return false;
         }
+
+        private async Task<WalletBalance> GetWalletBalance(WalletInfo walletInfo, string assetId)
+        {
+            if (walletInfo == null)
+                return null;
+
+            if (walletInfo.Type == WalletType.Trading)
+            {
+                var trading = await _balancesClient.GetClientBalanceByAssetId(
+                    new ClientBalanceByAssetIdModel
+                    {
+                        AssetId = assetId,
+                        ClientId = walletInfo.ClientId
+                    });
+                return trading == null ? null : new WalletBalance(walletInfo.Id, trading.Balance);
+            }
+            
+            var balance = await _balancesClient.GetClientBalanceByAssetId(
+                new ClientBalanceByAssetIdModel
+                {
+                    AssetId = assetId,
+                    ClientId = walletInfo.Id
+                });
+            return balance == null ? null : new WalletBalance(walletInfo.Id, balance.Balance);
+        }
+
+        private record WalletBalance(string WalletId, decimal Balance);
     }
 }

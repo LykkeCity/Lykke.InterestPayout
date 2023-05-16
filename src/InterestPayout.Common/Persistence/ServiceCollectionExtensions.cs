@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Net;
 using System.Net.Http;
-using AzureStorage;
-using AzureStorage.Tables;
 using InterestPayout.Common.Configuration;
-using InterestPayout.Common.Persistence.ExternalEntities.Balances;
-using InterestPayout.Common.Persistence.ExternalEntities.Clients;
-using InterestPayout.Common.Persistence.ExternalEntities.Wallets;
 using InterestPayout.Common.Persistence.ReadModels.PayoutSchedules;
-using Lykke.Logs;
+using Lykke.Common.Log;
+using Lykke.HttpClientGenerator;
 using Lykke.MatchingEngine.Connector.Services;
 using Lykke.Service.Assets.Client;
-using Lykke.SettingsReader.ReloadingManager;
+using Lykke.Service.Balances.Client;
+using Lykke.Service.ClientAccount.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -23,34 +20,18 @@ namespace InterestPayout.Common.Persistence
         public static IServiceCollection AddExternalDataSources(this IServiceCollection services,
             ExternalServicesConfig externalServicesConfig)
         {
-            // is this an empty log which logs to nowhere or a default log?
-            var lykkeLog = LogFactory.Create();
+            var defaultTimeout = TimeSpan.FromSeconds(30);
             
-            services.AddTransient<INoSQLTableStorage<WalletEntity>>(s =>
+            var clientServiceUrl = externalServicesConfig.ClientAccountService.ServiceUrl ??
+                          throw new ArgumentNullException(nameof(externalServicesConfig.ClientAccountService));
+            services.AddTransient<IClientAccountClient>(s =>
             {
-                var implementation = AzureTableStorage<WalletEntity>.Create(
-                    ConstantReloadingManager.From(externalServicesConfig.WalletsConnectionString),
-                    "Wallets",
-                    lykkeLog);
-                return implementation;
-            });
-            
-            services.AddTransient<INoSQLTableStorage<ClientAccountEntity>>(s =>
-            {
-                var implementation = AzureTableStorage<ClientAccountEntity>.Create(
-                    ConstantReloadingManager.From(externalServicesConfig.ClientPersonalInfoConnectionString),
-                    "Traders",
-                    lykkeLog);
-                return implementation;
-            });
-            
-            services.AddTransient<INoSQLTableStorage<BalanceEntity>>(s =>
-            {
-                var implementation = AzureTableStorage<BalanceEntity>.Create(
-                    ConstantReloadingManager.From(externalServicesConfig.BalancesConnectionString),
-                    "Balances",
-                    lykkeLog);
-                return implementation;
+                var httpClientGenerator = HttpClientGenerator.BuildForUrl(clientServiceUrl)
+                    .WithTimeout(externalServicesConfig.ClientAccountService.Timeout ?? defaultTimeout)
+                    .WithRequestErrorLogging(s.GetService<ILogFactory>())
+                    .Create();
+                    
+                return new ClientAccountClient(httpClientGenerator);
             });
             
             services.AddTransient<TcpMatchingEngineClient>(s =>
@@ -61,14 +42,22 @@ namespace InterestPayout.Common.Persistence
 
                 var matchingEngineEndpoint = new IPEndPoint(matchingEngineIp[0], matchingEnginePort);
                 // without enableRetries flag client starts to return null response after 10 seconds being idle
-                var tcpMeClient = new TcpMatchingEngineClient(matchingEngineEndpoint, lykkeLog, enableRetries: true);
+                var tcpMeClient = new TcpMatchingEngineClient(matchingEngineEndpoint, s.GetService<ILogFactory>(), enableRetries: true);
                 tcpMeClient.Start();
                 return tcpMeClient;
             });
             
-            services.AddSingleton<IAssetsService>(_ => new AssetsService(
-                    new Uri(externalServicesConfig.AssetsService.ServiceUrl),
-                    new HttpClient()));
+            var assetServiceUrl = externalServicesConfig.AssetsService.ServiceUrl ??
+                          throw new ArgumentNullException(nameof(externalServicesConfig.AssetsService));
+            services.AddTransient<IAssetsService>(s =>
+            {
+                var timeout = externalServicesConfig.AssetsService.Timeout ?? defaultTimeout;
+                return new AssetsService(new Uri(assetServiceUrl), new HttpClient { Timeout = timeout });
+            });
+            
+            var balancesServiceUrl = externalServicesConfig.BalancesService.ServiceUrl ??
+                          throw new ArgumentNullException(nameof(externalServicesConfig.BalancesService));
+            services.AddTransient<IBalancesClient>(_ => new BalancesClient(balancesServiceUrl));
 
             return services;
         }
@@ -77,8 +66,6 @@ namespace InterestPayout.Common.Persistence
             DbConfig dbConfig)
         {
             services.AddTransient<IPayoutScheduleRepository, PayoutScheduleRepository>();
-            services.AddTransient<IWalletRepository, WalletRepository>();
-            services.AddTransient<IBalanceRepository, BalanceRepository>();
             services.AddSingleton(x =>
             {
                 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();

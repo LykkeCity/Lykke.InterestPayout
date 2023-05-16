@@ -1,11 +1,11 @@
 using System;
-using Lykke.SettingsReader.Attributes;
 
 namespace InterestPayout.Common.Configuration
 {
-    public class AssetsServiceClientConfig
+    public class ExternalServiceClientConfig
     {
-        [HttpCheck("api/isalive")]
         public string ServiceUrl { get; set; }
+        
+        public TimeSpan? Timeout { get; set; }
     }
 }

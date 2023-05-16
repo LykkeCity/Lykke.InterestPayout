@@ -2,14 +2,12 @@
 {
     public class ExternalServicesConfig
     {
-        public string WalletsConnectionString { get; set; }
+        public ExternalServiceClientConfig ClientAccountService { get; set; }
         
-        public string ClientPersonalInfoConnectionString { get; set; }
-        
-        public string BalancesConnectionString { get; set; }
+        public ExternalServiceClientConfig BalancesService { get; set; }
         
         public string MatchingEngineConnectionString { get; set; }
         
-        public AssetsServiceClientConfig AssetsService { get; set; }
+        public ExternalServiceClientConfig AssetsService { get; set; }
     }
 }
