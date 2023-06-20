@@ -78,6 +78,7 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
                 entity.PayoutAssetId,
                 entity.InterestRate,
                 entity.CronSchedule,
+                entity.ShouldNotifyUser,
                 entity.CreatedAt,
                 entity.UpdatedAt,
                 entity.Version,

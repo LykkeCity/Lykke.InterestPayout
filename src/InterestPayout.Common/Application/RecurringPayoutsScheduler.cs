@@ -107,13 +107,17 @@ namespace InterestPayout.Common.Application
                     config.AssetId,
                     config.PayoutAssetId,
                     config.PayoutInterestRate,
-                    config.PayoutCronSchedule);
+                    config.PayoutCronSchedule,
+                    config.Notifications.IsEnabled);
                 await payoutScheduleRepository.Add(schedule);
-                await ScheduleNewRecurringPayout(schedule, config);
+                await ScheduleNewRecurringPayout(schedule);
             }
             else
             {
-                var hasChanges = schedule.UpdatePayoutSchedule(config.PayoutAssetId, config.PayoutInterestRate, config.PayoutCronSchedule);
+                var hasChanges = schedule.UpdatePayoutSchedule(config.PayoutAssetId,
+                    config.PayoutInterestRate,
+                    config.PayoutCronSchedule,
+                    config.Notifications.IsEnabled);
                 if (hasChanges)
                 {
                     _logger.LogInformation("[Init]: found existing schedule, updating {@context}", new
@@ -121,7 +125,7 @@ namespace InterestPayout.Common.Application
                         config
                     });
                     await payoutScheduleRepository.Update(schedule);
-                    await RescheduleRecurringPayout(schedule, config);
+                    await RescheduleRecurringPayout(schedule);
                 }
                 else
                 {
@@ -152,7 +156,7 @@ namespace InterestPayout.Common.Application
             }
         }
 
-        private async Task ScheduleNewRecurringPayout(PayoutSchedule schedule, PayoutConfig config)
+        private async Task ScheduleNewRecurringPayout(PayoutSchedule schedule)
         {
             var cronExpression = new Quartz.CronExpression(schedule.CronSchedule);
             var executionInterval = cronExpression.CalculateTimeIntervalBetweenExecutions();
@@ -189,7 +193,7 @@ namespace InterestPayout.Common.Application
                     InterestRate = schedule.InterestRate,
                     InternalScheduleId = schedule.Id,
                     InternalScheduleSequence = schedule.Sequence,
-                    ShouldNotifyUser = config.Notifications.IsEnabled
+                    ShouldNotifyUser = schedule.ShouldNotifyUser
                 });
         }
 
@@ -198,10 +202,10 @@ namespace InterestPayout.Common.Application
             await _bus.CancelScheduledRecurringSend(assetId, ScheduleGroup);
         }
         
-        private async Task RescheduleRecurringPayout(PayoutSchedule schedule, PayoutConfig config)
+        private async Task RescheduleRecurringPayout(PayoutSchedule schedule)
         {
             await RemoveScheduledRecurringPayout(schedule.AssetId);
-            await ScheduleNewRecurringPayout(schedule, config);
+            await ScheduleNewRecurringPayout(schedule);
         }
     }
 }

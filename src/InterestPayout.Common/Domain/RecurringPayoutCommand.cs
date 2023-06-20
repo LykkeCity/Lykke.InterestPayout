@@ -11,10 +11,10 @@ namespace InterestPayout.Common.Domain
         
         public decimal InterestRate { get; set; }
         
+        public bool ShouldNotifyUser { get; set; }
+        
         public long InternalScheduleId { get; set; }
         
         public int InternalScheduleSequence { get; set; }
-        
-        public bool ShouldNotifyUser { get; set; }
     }
 }
