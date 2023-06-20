@@ -15,7 +15,5 @@ namespace InterestPayout.Common.Configuration
         public PayoutConfig[] Payouts { get; set; }
         
         public TimeSpan SmallestPayoutScheduleInterval { get; set; } = TimeSpan.FromHours(23);
-
-        public NotificationConfig Notifications { get; set; } = NotificationConfig.Default;
     }
 }

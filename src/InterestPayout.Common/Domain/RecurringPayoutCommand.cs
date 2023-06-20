@@ -14,5 +14,7 @@ namespace InterestPayout.Common.Domain
         public long InternalScheduleId { get; set; }
         
         public int InternalScheduleSequence { get; set; }
+        
+        public bool ShouldNotifyUser { get; set; }
     }
 }

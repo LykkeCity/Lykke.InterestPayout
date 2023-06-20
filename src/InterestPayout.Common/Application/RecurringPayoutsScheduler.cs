@@ -109,7 +109,7 @@ namespace InterestPayout.Common.Application
                     config.PayoutInterestRate,
                     config.PayoutCronSchedule);
                 await payoutScheduleRepository.Add(schedule);
-                await ScheduleNewRecurringPayout(schedule);
+                await ScheduleNewRecurringPayout(schedule, config);
             }
             else
             {
@@ -121,7 +121,7 @@ namespace InterestPayout.Common.Application
                         config
                     });
                     await payoutScheduleRepository.Update(schedule);
-                    await RescheduleRecurringPayout(schedule);
+                    await RescheduleRecurringPayout(schedule, config);
                 }
                 else
                 {
@@ -152,7 +152,7 @@ namespace InterestPayout.Common.Application
             }
         }
 
-        private async Task ScheduleNewRecurringPayout(PayoutSchedule schedule)
+        private async Task ScheduleNewRecurringPayout(PayoutSchedule schedule, PayoutConfig config)
         {
             var cronExpression = new Quartz.CronExpression(schedule.CronSchedule);
             var executionInterval = cronExpression.CalculateTimeIntervalBetweenExecutions();
@@ -189,6 +189,7 @@ namespace InterestPayout.Common.Application
                     InterestRate = schedule.InterestRate,
                     InternalScheduleId = schedule.Id,
                     InternalScheduleSequence = schedule.Sequence,
+                    ShouldNotifyUser = config.Notifications.IsEnabled
                 });
         }
 
@@ -197,10 +198,10 @@ namespace InterestPayout.Common.Application
             await _bus.CancelScheduledRecurringSend(assetId, ScheduleGroup);
         }
         
-        private async Task RescheduleRecurringPayout(PayoutSchedule schedule)
+        private async Task RescheduleRecurringPayout(PayoutSchedule schedule, PayoutConfig config)
         {
             await RemoveScheduledRecurringPayout(schedule.AssetId);
-            await ScheduleNewRecurringPayout(schedule);
+            await ScheduleNewRecurringPayout(schedule, config);
         }
     }
 }

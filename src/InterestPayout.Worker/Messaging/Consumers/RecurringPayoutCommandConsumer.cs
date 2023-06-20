@@ -37,7 +37,6 @@ namespace InterestPayout.Worker.Messaging.Consumers
         private readonly ICqrsEngine _cqrsEngine;
         private readonly IClientAccountClient _clientAccountClient;
         private readonly IBalancesClient _balancesClient;
-        private readonly NotificationConfig _notificationConfig;
 
         public RecurringPayoutCommandConsumer(ILogger<RecurringPayoutCommandConsumer> logger,
             TcpMatchingEngineClient matchingEngineClient,
@@ -45,8 +44,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
             IAssetsService assetsService,
             ICqrsEngine cqrsEngine,
             IClientAccountClient clientAccountClient,
-            IBalancesClient balancesClient,
-            NotificationConfig notificationConfig)
+            IBalancesClient balancesClient)
         {
             _logger = logger;
             _matchingEngineClient = matchingEngineClient;
@@ -55,7 +53,6 @@ namespace InterestPayout.Worker.Messaging.Consumers
             _cqrsEngine = cqrsEngine;
             _clientAccountClient = clientAccountClient;
             _balancesClient = balancesClient;
-            _notificationConfig = notificationConfig;
         }
 
         public async Task Consume(ConsumeContext<RecurringPayoutCommand> context)
@@ -242,7 +239,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                             ClientId = clientId,
                             WalletId = walletId,
                             Amount = Convert.ToDecimal(amount),
-                            ShouldNotifyUser = _notificationConfig.IsEnabled
+                            ShouldNotifyUser = command.ShouldNotifyUser
                         },
                         InterestPayoutBoundedContext.Name);
                     creditedAmounts.Add(amount);
@@ -268,7 +265,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                             ClientId = clientId,
                             WalletId = walletId,
                             Amount = Convert.ToDecimal(amount),
-                            ShouldNotifyUser = _notificationConfig.IsEnabled
+                            ShouldNotifyUser = command.ShouldNotifyUser
                         },
                         InterestPayoutBoundedContext.Name);
                 }

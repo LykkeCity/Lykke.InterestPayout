@@ -40,7 +40,6 @@ namespace InterestPayout.Worker
                     Config.Azure.SlackConnString,
                     Config.Azure.SlackNotificationsQueue)
                 .AddLykkeCqrs(Config.RabbitMq)
-                .AddSingleton<NotificationConfig>(Config.Notifications)
                 .AddSingleton<IPayoutConfigService>(new PayoutConfigService(Config.Payouts, Config.SmallestPayoutScheduleInterval))
                 .AddTransient<IRecurringPayoutsScheduler, RecurringPayoutsScheduler>()
                 .AddPersistence(Config.Db)
