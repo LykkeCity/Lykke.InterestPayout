@@ -107,13 +107,17 @@ namespace InterestPayout.Common.Application
                     config.AssetId,
                     config.PayoutAssetId,
                     config.PayoutInterestRate,
-                    config.PayoutCronSchedule);
+                    config.PayoutCronSchedule,
+                    config.Notifications.IsEnabled);
                 await payoutScheduleRepository.Add(schedule);
                 await ScheduleNewRecurringPayout(schedule);
             }
             else
             {
-                var hasChanges = schedule.UpdatePayoutSchedule(config.PayoutAssetId, config.PayoutInterestRate, config.PayoutCronSchedule);
+                var hasChanges = schedule.UpdatePayoutSchedule(config.PayoutAssetId,
+                    config.PayoutInterestRate,
+                    config.PayoutCronSchedule,
+                    config.Notifications.IsEnabled);
                 if (hasChanges)
                 {
                     _logger.LogInformation("[Init]: found existing schedule, updating {@context}", new
@@ -189,6 +193,7 @@ namespace InterestPayout.Common.Application
                     InterestRate = schedule.InterestRate,
                     InternalScheduleId = schedule.Id,
                     InternalScheduleSequence = schedule.Sequence,
+                    ShouldNotifyUser = schedule.ShouldNotifyUser
                 });
         }
 

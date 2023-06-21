@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using InterestPayout.Common.Application;
+using InterestPayout.Common.Configuration;
 using InterestPayout.Common.Domain;
 using InterestPayout.Common.Persistence;
 using InterestPayout.Common.Utils;
@@ -237,7 +238,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
                             AssetId = command.AssetId,
                             ClientId = clientId,
                             WalletId = walletId,
-                            Amount = Convert.ToDecimal(amount)
+                            Amount = Convert.ToDecimal(amount),
+                            ShouldNotifyUser = command.ShouldNotifyUser
                         },
                         InterestPayoutBoundedContext.Name);
                     creditedAmounts.Add(amount);
@@ -262,7 +264,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
                             AssetId = command.AssetId,
                             ClientId = clientId,
                             WalletId = walletId,
-                            Amount = Convert.ToDecimal(amount)
+                            Amount = Convert.ToDecimal(amount),
+                            ShouldNotifyUser = command.ShouldNotifyUser
                         },
                         InterestPayoutBoundedContext.Name);
                 }

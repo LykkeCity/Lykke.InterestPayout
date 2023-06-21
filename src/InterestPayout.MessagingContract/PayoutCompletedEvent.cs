@@ -16,5 +16,7 @@ namespace Lykke.InterestPayout.MessagingContract
         public string PayoutAssetId { get; set; }
         
         public decimal Amount { get; set; }
+        
+        public bool ShouldNotifyUser { get; set; }
     }
 }
