@@ -372,7 +372,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         AssetId = assetId,
                         ClientId = walletInfo.ClientId
                     });
-                return trading == null ? null : new WalletBalance(walletInfo.Id, trading.Balance);
+                return trading == null ? null : new WalletBalance(walletInfo.ClientId, trading.Balance);
             }
             
             var balance = await _balancesClient.GetClientBalanceByAssetId(
