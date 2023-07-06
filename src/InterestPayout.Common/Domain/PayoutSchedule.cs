@@ -35,6 +35,7 @@ namespace InterestPayout.Common.Domain
             CronSchedule = cronSchedule;
             CreatedAt = createdAt;
             UpdatedAt = updatedAt;
+            ShouldNotifyUser = shouldNotifyUser;
             Version = version;
             Sequence = sequence;
         }
@@ -89,7 +90,7 @@ namespace InterestPayout.Common.Domain
         {
             var hasChanges = false;
 
-            if(newPayoutAssetId != PayoutAssetId)
+            if (newPayoutAssetId != PayoutAssetId)
             {
                 PayoutAssetId = newPayoutAssetId;
                 hasChanges = true;
