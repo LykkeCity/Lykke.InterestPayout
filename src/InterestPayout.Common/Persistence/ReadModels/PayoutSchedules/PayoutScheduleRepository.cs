@@ -94,6 +94,7 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
                 PayoutAssetId = payoutSchedule.PayoutAssetId,
                 InterestRate = payoutSchedule.InterestRate,
                 CronSchedule = payoutSchedule.CronSchedule,
+                ShouldNotifyUser = payoutSchedule.ShouldNotifyUser,
                 CreatedAt = payoutSchedule.CreatedAt,
                 UpdatedAt = payoutSchedule.UpdatedAt,
                 Version = payoutSchedule.Version,
