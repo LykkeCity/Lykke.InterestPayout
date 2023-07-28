@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http;
 using InterestPayout.Common.Configuration;
+using InterestPayout.Common.Persistence.ReadModels.AssetInterests;
 using InterestPayout.Common.Persistence.ReadModels.PayoutSchedules;
 using Lykke.Common.Log;
 using Lykke.HttpClientGenerator;
@@ -66,6 +67,7 @@ namespace InterestPayout.Common.Persistence
             DbConfig dbConfig)
         {
             services.AddTransient<IPayoutScheduleRepository, PayoutScheduleRepository>();
+            services.AddTransient<IAssetInterestRepository, AssetInterestRepository>();
             services.AddSingleton(x =>
             {
                 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();

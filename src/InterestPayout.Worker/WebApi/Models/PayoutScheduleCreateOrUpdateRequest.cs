@@ -1,11 +1,13 @@
-﻿namespace InterestPayout.Common.Configuration
+namespace InterestPayout.Worker.WebApi.Models
 {
-    public class PayoutConfig
+    public class PayoutScheduleCreateOrUpdateRequest
     {
         public string AssetId { get; set; }
+        
         public string PayoutAssetId { get; set; }
+        
         public string PayoutCronSchedule { get; set; }
         
-        public NotificationConfig Notifications { get; set; } = NotificationConfig.Default;
+        public bool ShouldNotifyUser { get; set; }
     }
 }
