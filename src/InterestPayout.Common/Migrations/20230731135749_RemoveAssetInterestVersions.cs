@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace InterestPayout.Common.Migrations
 {
@@ -7,10 +6,11 @@ namespace InterestPayout.Common.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
+            migrationBuilder.RenameColumn(
                 name: "ValidUntil",
                 schema: "interest_payout",
-                table: "asset_interests");
+                table: "asset_interests",
+                newName: "UpdatedAt");
 
             migrationBuilder.AlterColumn<long>(
                 name: "Version",
@@ -21,15 +21,6 @@ namespace InterestPayout.Common.Migrations
                 oldClrType: typeof(int),
                 oldType: "integer");
 
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "CreatedAt",
-                schema: "interest_payout",
-                table: "asset_interests",
-                type: "timestamp without time zone",
-                nullable: false,
-                oldClrType: typeof(DateTimeOffset),
-                oldType: "timestamp with time zone");
-
             migrationBuilder.AddColumn<int>(
                 name: "Sequence",
                 schema: "interest_payout",
@@ -37,14 +28,6 @@ namespace InterestPayout.Common.Migrations
                 type: "integer",
                 nullable: false,
                 defaultValue: 0);
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "UpdatedAt",
-                schema: "interest_payout",
-                table: "asset_interests",
-                type: "timestamp without time zone",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
 
             migrationBuilder.CreateIndex(
                 name: "ix_asset_interest_asset_id_uq",
@@ -66,10 +49,11 @@ namespace InterestPayout.Common.Migrations
                 schema: "interest_payout",
                 table: "asset_interests");
 
-            migrationBuilder.DropColumn(
+            migrationBuilder.RenameColumn(
                 name: "UpdatedAt",
                 schema: "interest_payout",
-                table: "asset_interests");
+                table: "asset_interests",
+                newName: "ValidUntil");
 
             migrationBuilder.AlterColumn<int>(
                 name: "Version",
@@ -79,23 +63,6 @@ namespace InterestPayout.Common.Migrations
                 nullable: false,
                 oldClrType: typeof(long),
                 oldType: "bigint");
-
-            migrationBuilder.AlterColumn<DateTimeOffset>(
-                name: "CreatedAt",
-                schema: "interest_payout",
-                table: "asset_interests",
-                type: "timestamp with time zone",
-                nullable: false,
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp without time zone");
-
-            migrationBuilder.AddColumn<DateTimeOffset>(
-                name: "ValidUntil",
-                schema: "interest_payout",
-                table: "asset_interests",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)));
         }
     }
 }

@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace InterestPayout.Common.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20230731113223_RemoveAssetInterestVersions")]
+    [Migration("20230731135749_RemoveAssetInterestVersions")]
     partial class RemoveAssetInterestVersions
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -38,8 +38,8 @@ namespace InterestPayout.Common.Migrations
                     b.Property<string>("AssetId")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("InterestRate")
                         .HasColumnType("numeric");
@@ -47,8 +47,8 @@ namespace InterestPayout.Common.Migrations
                     b.Property<int>("Sequence")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("Version")
                         .HasColumnType("bigint");
