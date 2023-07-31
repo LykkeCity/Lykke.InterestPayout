@@ -55,8 +55,8 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
                 Id = interest.Id,
                 AssetId = interest.AssetId,
                 InterestRate = interest.InterestRate,
-                CreatedAt = interest.CreatedAt.ToUniversalTime(),
-                UpdatedAt = interest.UpdatedAt.ToUniversalTime(),
+                CreatedAt = interest.CreatedAt,
+                UpdatedAt = interest.UpdatedAt,
                 Version = interest.Version,
                 Sequence = interest.Sequence,
             };
