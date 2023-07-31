@@ -44,8 +44,8 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
                 entity.InterestRate,
                 entity.Version,
                 entity.Sequence,
-                entity.CreatedAt.DateTime,
-                entity.UpdatedAt.DateTime);
+                entity.CreatedAt.UtcDateTime,
+                entity.UpdatedAt.UtcDateTime);
         }
 
         private static AssetInterestEntity ToEntity(AssetInterest interest)
@@ -55,8 +55,8 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
                 Id = interest.Id,
                 AssetId = interest.AssetId,
                 InterestRate = interest.InterestRate,
-                CreatedAt = interest.CreatedAt,
-                UpdatedAt = interest.UpdatedAt,
+                CreatedAt = interest.CreatedAt.ToUniversalTime(),
+                UpdatedAt = interest.UpdatedAt.ToUniversalTime(),
                 Version = interest.Version,
                 Sequence = interest.Sequence,
             };

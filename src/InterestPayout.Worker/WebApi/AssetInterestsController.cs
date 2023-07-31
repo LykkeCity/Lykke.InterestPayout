@@ -38,7 +38,7 @@ namespace InterestPayout.Worker.WebApi
                 return BadRequest("Request is required.");
             if(string.IsNullOrWhiteSpace(request.AssetId))
                 return BadRequest("AssetId is required.");
-            if (request.InterestRate < 100m)
+            if (request.InterestRate < -100m)
                 return BadRequest("Interest rate cannot be lower than minus one hundred percent.");
             
             await using var unitOfWork = await _unitOfWorkManager.Begin(
