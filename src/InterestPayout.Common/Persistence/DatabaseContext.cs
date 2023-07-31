@@ -80,6 +80,11 @@ namespace InterestPayout.Common.Persistence
             modelBuilder.Entity<AssetInterestEntity>()
                 .Property(x => x.Id)
                 .HasDefaultValueSql($"nextval('{SchemaName}.{IdGenerators.AssetInterests}')");
+            
+            modelBuilder.Entity<AssetInterestEntity>()
+                .HasIndex(x => x.AssetId)
+                .IsUnique()
+                .HasDatabaseName("ix_asset_interest_asset_id_uq");
         }
     }
 }

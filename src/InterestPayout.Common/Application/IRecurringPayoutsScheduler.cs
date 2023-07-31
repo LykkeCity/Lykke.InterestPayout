@@ -6,8 +6,8 @@ namespace InterestPayout.Common.Application
 {
     public interface IRecurringPayoutsScheduler
     {
-        Task CreateOrUpdate(PayoutConfig payoutConfig);
+        Task CreateOrUpdate(PayoutConfig payoutConfig, string idempotencyId);
         
-        Task Remove(ISet<string> assetIds);
+        Task Remove(ISet<string> assetIds, string idempotencyId);
     }
 }

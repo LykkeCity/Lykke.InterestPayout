@@ -1,6 +1,6 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using InterestPayout.Common.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
@@ -14,19 +14,25 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
             _dbContext = dbContext;
         }
 
-        public async Task Add(Domain.AssetInterest assetInterest)
+        public async Task Add(AssetInterest assetInterest)
         {
             var entity = ToEntity(assetInterest);
             await _dbContext.AssetInterests.AddAsync(entity);
+            await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<Domain.AssetInterest> GetLatestForDateOrDefault(string assetId, DateTimeOffset date)
+        public async Task Update(AssetInterest assetInterest)
+        {
+            var entity = ToEntity(assetInterest);
+            _dbContext.AssetInterests.Update(entity);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<AssetInterest> GetByAssetOrDefault(string assetId)
         {
             var entity = await _dbContext.AssetInterests
-                .Where(x => x.AssetId == assetId && x.ValidUntil >= date)
-                .OrderByDescending(x => x.CreatedAt)
-                .ThenByDescending(x => x.Version)
-                .FirstOrDefaultAsync();
+                .Where(x => x.AssetId == assetId)
+                .SingleOrDefaultAsync();
 
             return entity == null ? null : ToDomain(entity);
         }
@@ -36,21 +42,23 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
             return Domain.AssetInterest.Restore(entity.Id,
                 entity.AssetId,
                 entity.InterestRate,
-                entity.ValidUntil,
                 entity.Version,
-                entity.CreatedAt);
+                entity.Sequence,
+                entity.CreatedAt,
+                entity.UpdatedAt);
         }
 
-        private static AssetInterestEntity ToEntity(Domain.AssetInterest interest)
+        private static AssetInterestEntity ToEntity(AssetInterest interest)
         {
             return new AssetInterestEntity
             {
                 Id = interest.Id,
                 AssetId = interest.AssetId,
                 InterestRate = interest.InterestRate,
-                ValidUntil = interest.ValidUntil,
                 CreatedAt = interest.CreatedAt,
-                Version = interest.Version
+                UpdatedAt = interest.UpdatedAt,
+                Version = interest.Version,
+                Sequence = interest.Sequence,
             };
         }
     }

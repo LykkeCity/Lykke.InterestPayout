@@ -10,10 +10,12 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
         
         public decimal InterestRate { get; set; }
         
-        public DateTimeOffset CreatedAt { get; set; }
+        public uint Version { get; set; }
         
-        public int Version { get; set; }
+        public int Sequence { get; set; }
         
-        public DateTimeOffset ValidUntil { get; set; }
+        public DateTime CreatedAt { get; set; }
+        
+        public DateTime UpdatedAt { get; set; }
     }
 }

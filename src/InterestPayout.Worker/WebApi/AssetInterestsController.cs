@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using InterestPayout.Common.Application;
@@ -30,45 +31,35 @@ namespace InterestPayout.Worker.WebApi
 
         [HttpPost("create-or-update")]
         public async Task<ActionResult> CreateOrUpdate(
-            [FromBody] AssetInterestCreateOrUpdateRequest createOrUpdateRequest)
+            [FromBody] AssetInterestCreateOrUpdateRequest request,
+            [Required, FromHeader(Name = "X-Idempotency-ID")] string idempotencyId)
         {
-            if (createOrUpdateRequest == null)
+            if (request == null)
                 return BadRequest("Request is required.");
-            if(string.IsNullOrWhiteSpace(createOrUpdateRequest.AssetId))
+            if(string.IsNullOrWhiteSpace(request.AssetId))
                 return BadRequest("AssetId is required.");
-            if (createOrUpdateRequest.InterestRate < 100m)
+            if (request.InterestRate < 100m)
                 return BadRequest("Interest rate cannot be lower than minus one hundred percent.");
             
             await using var unitOfWork = await _unitOfWorkManager.Begin(
-                $"CreatingOrUpdateAssetInterest:{DateTimeOffset.UtcNow.Ticks}");
+                $"CreatingOrUpdateAssetInterest:{idempotencyId}");
 
-            var existingEntry =
-                await unitOfWork.AssetInterests.GetLatestForDateOrDefault(createOrUpdateRequest.AssetId,
-                    DateTimeOffset.UtcNow);
-
+            var existingEntry = await unitOfWork.AssetInterests.GetByAssetOrDefault(request.AssetId);
             if (existingEntry == null)
             {
                 var newAssetInterestId = await _idGenerator.GetId(
                     Guid.NewGuid().ToString(),
                     IdGenerators.AssetInterests);
                 var assetInterest = AssetInterest.Create(newAssetInterestId,
-                    createOrUpdateRequest.AssetId,
-                    createOrUpdateRequest.InterestRate,
-                    createOrUpdateRequest.ValidUntil,
-                    0);
+                    request.AssetId,
+                    request.InterestRate);
                 await unitOfWork.AssetInterests.Add(assetInterest);
             }
             else
             {
-                var newAssetInterestId = await _idGenerator.GetId(
-                    Guid.NewGuid().ToString(),
-                    IdGenerators.AssetInterests);
-                var assetInterest = AssetInterest.Create(newAssetInterestId,
-                    createOrUpdateRequest.AssetId,
-                    createOrUpdateRequest.InterestRate,
-                    createOrUpdateRequest.ValidUntil,
-                    existingEntry.Version + 1);
-                await unitOfWork.AssetInterests.Add(assetInterest);
+                var hasChanges = existingEntry.UpdateInterestRate(request.InterestRate);
+                if (hasChanges)
+                    await unitOfWork.AssetInterests.Update(existingEntry);
             }
 
             await unitOfWork.Commit();

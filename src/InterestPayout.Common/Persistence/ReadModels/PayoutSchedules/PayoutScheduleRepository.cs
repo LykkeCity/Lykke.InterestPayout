@@ -53,10 +53,10 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
             return ToDomain(entity);
         }
 
-        public async Task<IReadOnlyCollection<PayoutSchedule>> GetAllExcept(ISet<string> assetIds)
+        public async Task<IReadOnlyCollection<PayoutSchedule>> GetByIds(ISet<string> assetIds)
         {
             var entries = await _dbContext.PayoutSchedules
-                .Where(x => !assetIds.Contains(x.AssetId))
+                .Where(x => assetIds.Contains(x.AssetId))
                 .ToListAsync();
 
             return entries.ConvertAll(x => ToDomain(x));

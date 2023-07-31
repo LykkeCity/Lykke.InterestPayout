@@ -67,7 +67,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 return;
 
             await using var roUnitOfWork = await _unitOfWorkManager.Begin();
-            var interestRateEntry = await roUnitOfWork.AssetInterests.GetLatestForDateOrDefault(context.Message.AssetId, scheduledDateTime.Value);
+            var interestRateEntry = await roUnitOfWork.AssetInterests.GetByAssetOrDefault(context.Message.AssetId);
             if (interestRateEntry == null)
             {
                 _logger.LogWarning("Cannot obtain interest rate for asset, message will be skipped {@context}", new

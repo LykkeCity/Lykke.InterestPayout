@@ -7,7 +7,5 @@ namespace InterestPayout.Worker.WebApi.Models
         public string AssetId { get; set; }
         
         public decimal InterestRate { get; set; }
-        
-        public DateTimeOffset ValidUntil { get; set; }
     }
 }

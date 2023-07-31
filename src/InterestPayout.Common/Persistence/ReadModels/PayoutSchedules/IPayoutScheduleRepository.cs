@@ -13,7 +13,7 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
         
         Task<PayoutSchedule> GetByIdOrDefault(long id);
 
-        Task<IReadOnlyCollection<PayoutSchedule>> GetAllExcept(ISet<string> assetIds);
+        Task<IReadOnlyCollection<PayoutSchedule>> GetByIds(ISet<string> assetIds);
 
         Task<PayoutSchedule> GetByAssetIdOrDefault(string assetId);
         Task<IReadOnlyCollection<PayoutSchedule>> GetAll();

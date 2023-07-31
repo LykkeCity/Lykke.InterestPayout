@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using InterestPayout.Common.Application;
@@ -29,43 +30,47 @@ namespace InterestPayout.Worker.WebApi
 
         [HttpPost("create-or-update")]
         public async Task<ActionResult> CreateOrUpdate(
-            [FromBody] PayoutScheduleCreateOrUpdateRequest createOrUpdateRequest)
+            [FromBody] PayoutScheduleCreateOrUpdateRequest request,
+            [Required, FromHeader(Name = "X-Idempotency-ID")] string idempotencyId)
         {
-            if (createOrUpdateRequest == null)
+            if (request == null)
                 return BadRequest("Request is required.");
-            if(string.IsNullOrWhiteSpace(createOrUpdateRequest.PayoutAssetId))
+            if(string.IsNullOrWhiteSpace(request.PayoutAssetId))
                 return BadRequest("PayoutAssetId is required.");
-            if(string.IsNullOrWhiteSpace(createOrUpdateRequest.AssetId))
+            if(string.IsNullOrWhiteSpace(request.AssetId))
                 return BadRequest("AssetId is required.");
-            if(string.IsNullOrWhiteSpace(createOrUpdateRequest.PayoutCronSchedule))
+            if(string.IsNullOrWhiteSpace(request.PayoutCronSchedule))
                 return BadRequest("PayoutCronSchedule is required.");
-            if (!Quartz.CronExpression.IsValidExpression(createOrUpdateRequest.PayoutCronSchedule))
+            if (!Quartz.CronExpression.IsValidExpression(request.PayoutCronSchedule))
                 return BadRequest("Invalid cron expression.");
             
-            var scheduleInterval = new Quartz.CronExpression(createOrUpdateRequest.PayoutCronSchedule).CalculateTimeIntervalBetweenExecutions();
+            var scheduleInterval = new Quartz.CronExpression(request.PayoutCronSchedule).CalculateTimeIntervalBetweenExecutions();
             var minimalAllowedInterval = _payoutConfigService.GetSmallestPayoutScheduleInterval();
             if (scheduleInterval < minimalAllowedInterval)
                 throw new InvalidOperationException(
-                    $"Scheduled interval for payouts for assetId '{createOrUpdateRequest.AssetId}' is less than minimal allowed interval. Configured value: {scheduleInterval}. Allowed minimum: {minimalAllowedInterval}.");
+                    $"Scheduled interval for payouts for assetId '{request.AssetId}' is less than minimal allowed interval. Configured value: {scheduleInterval}. Allowed minimum: {minimalAllowedInterval}.");
 
             await _payoutsScheduler.CreateOrUpdate(new PayoutConfig
             {
-                AssetId = createOrUpdateRequest.AssetId,
-                PayoutAssetId = createOrUpdateRequest.PayoutAssetId,
-                PayoutCronSchedule = createOrUpdateRequest.PayoutCronSchedule,
-                Notifications = new NotificationConfig {IsEnabled = createOrUpdateRequest.ShouldNotifyUser}
-            });
+                AssetId = request.AssetId,
+                PayoutAssetId = request.PayoutAssetId,
+                PayoutCronSchedule = request.PayoutCronSchedule,
+                Notifications = new NotificationConfig {IsEnabled = request.ShouldNotifyUser}
+            },
+            idempotencyId);
 
             return Ok();
         }
         
-        [HttpPost("delete")]
-        public async Task<ActionResult> Delete([FromBody] IReadOnlyCollection<string> assetIds)
+        [HttpDelete("delete")]
+        public async Task<ActionResult> Delete(
+            [FromBody] IReadOnlyCollection<string> assetIds,
+            [Required, FromHeader(Name = "X-Idempotency-ID")] string idempotencyId)
         {
             if (assetIds == null || assetIds.Count == 0 || assetIds.Any(x => string.IsNullOrWhiteSpace(x)))
                 return BadRequest("Empty asset IDs.");
 
-            await _payoutsScheduler.Remove(assetIds.ToHashSet());
+            await _payoutsScheduler.Remove(assetIds.ToHashSet(), idempotencyId);
             
             return Ok();
         }

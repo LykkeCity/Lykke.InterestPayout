@@ -8,72 +8,73 @@ namespace InterestPayout.Common.Domain
         
         public string AssetId { get; }
         
-        public decimal InterestRate { get; }
+        public decimal InterestRate { get; private set; }
         
-        public DateTimeOffset ValidUntil { get; }
-         
-        public DateTimeOffset CreatedAt { get; }
+        public DateTime CreatedAt { get; }
         
-        public int Version { get; init; }
+        public DateTime UpdatedAt { get; private set; }
+        
+        public uint Version { get; private set; }
+        
+        public int Sequence { get; private set; }
 
         private AssetInterest(long id,
             string assetId,
             decimal interestRate,
-            DateTimeOffset validUntil,
-            int version,
-            DateTimeOffset createdAt)
+            uint version,
+            int sequence,
+            DateTime createdAt,
+            DateTime updatedAt)
         {
             Id = id;
             AssetId = assetId;
             InterestRate = interestRate;
-            ValidUntil = validUntil;
             Version = version;
+            Sequence = sequence;
             CreatedAt = createdAt;
+            UpdatedAt = updatedAt;
         }
 
         public static AssetInterest Create(long id,
             string assetId,
-            decimal interestRate,
-            DateTimeOffset validUntil,
-            int version)
+            decimal interestRate)
         {
-            var now = DateTimeOffset.UtcNow;
+            var now = DateTime.UtcNow;
             return new AssetInterest(id,
                 assetId,
                 interestRate,
-                validUntil,
-                version,
+                default,
+                default,
+                now,
                 now);
         }
         
         public static AssetInterest Restore(long id,
             string assetId,
             decimal interestRate,
-            DateTimeOffset validUntil,
-            int version,
-            DateTimeOffset createdAt)
+            uint version,
+            int sequence,
+            DateTime createdAt,
+            DateTime updatedAt)
         {
             return new AssetInterest(id,
                 assetId,
                 interestRate,
-                validUntil,
                 version,
-                createdAt);
+                sequence,
+                createdAt,
+                updatedAt);
         }
         
-        public AssetInterest CreateNewVersion(long newId,
-            decimal newInterestRate,
-            DateTimeOffset newValidUntil)
+        public bool UpdateInterestRate(decimal newInterestRate)
         {
-            if (newValidUntil <= ValidUntil)
-                throw new InvalidOperationException("New valid until has to be greater than the previous one.");
+            if (InterestRate == newInterestRate)
+                return false;
 
-            return new AssetInterest(newId,
-                AssetId,
-                newInterestRate,
-                newValidUntil,
-                Version + 1,
-                DateTimeOffset.UtcNow);
+            InterestRate = newInterestRate;
+            Sequence++;
+            UpdatedAt = DateTime.UtcNow;
+            return true;
         }
     }
 }
