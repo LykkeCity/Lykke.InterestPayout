@@ -53,10 +53,10 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
             return ToDomain(entity);
         }
 
-        public async Task<IReadOnlyCollection<PayoutSchedule>> GetAllExcept(ISet<string> assetIds)
+        public async Task<IReadOnlyCollection<PayoutSchedule>> GetByIds(ISet<string> assetIds)
         {
             var entries = await _dbContext.PayoutSchedules
-                .Where(x => !assetIds.Contains(x.AssetId))
+                .Where(x => assetIds.Contains(x.AssetId))
                 .ToListAsync();
 
             return entries.ConvertAll(x => ToDomain(x));
@@ -76,7 +76,6 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
             return PayoutSchedule.Restore(entity.Id,
                 entity.AssetId,
                 entity.PayoutAssetId,
-                entity.InterestRate,
                 entity.CronSchedule,
                 entity.ShouldNotifyUser,
                 entity.CreatedAt,
@@ -92,7 +91,6 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
                 Id = payoutSchedule.Id,
                 AssetId = payoutSchedule.AssetId,
                 PayoutAssetId = payoutSchedule.PayoutAssetId,
-                InterestRate = payoutSchedule.InterestRate,
                 CronSchedule = payoutSchedule.CronSchedule,
                 ShouldNotifyUser = payoutSchedule.ShouldNotifyUser,
                 CreatedAt = payoutSchedule.CreatedAt,

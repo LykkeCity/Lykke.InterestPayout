@@ -7,7 +7,6 @@ namespace InterestPayout.Common.Domain
         public long Id { get; }
         public string AssetId { get; }
         public string PayoutAssetId { get; private set; }
-        public decimal InterestRate { get; private set; }
         public string CronSchedule { get; private set; }
         
         public bool ShouldNotifyUser { get; set; }
@@ -20,7 +19,6 @@ namespace InterestPayout.Common.Domain
         private PayoutSchedule(long id,
             string assetId,
             string payoutAssetId,
-            decimal interestRate,
             string cronSchedule,
             bool shouldNotifyUser,
             DateTimeOffset createdAt,
@@ -31,7 +29,6 @@ namespace InterestPayout.Common.Domain
             Id = id;
             AssetId = assetId;
             PayoutAssetId = payoutAssetId;
-            InterestRate = interestRate;
             CronSchedule = cronSchedule;
             CreatedAt = createdAt;
             UpdatedAt = updatedAt;
@@ -43,7 +40,6 @@ namespace InterestPayout.Common.Domain
         public static PayoutSchedule Create(long id,
             string assetId,
             string payoutAssetId,
-            decimal interestRate,
             string cronSchedule,
             bool shouldNotifyUser)
         {
@@ -51,7 +47,6 @@ namespace InterestPayout.Common.Domain
             return new PayoutSchedule(id,
                 assetId,
                 payoutAssetId,
-                interestRate,
                 cronSchedule,
                 shouldNotifyUser,
                 createdAt: now,
@@ -63,7 +58,6 @@ namespace InterestPayout.Common.Domain
         public static PayoutSchedule Restore(long id,
             string assetId,
             string payoutAssetId,
-            decimal interestRate,
             string cronSchedule,
             bool shouldNotifyUser,
             DateTimeOffset createdAt,
@@ -74,7 +68,6 @@ namespace InterestPayout.Common.Domain
             return new PayoutSchedule(id,
                 assetId,
                 payoutAssetId,
-                interestRate,
                 cronSchedule,
                 shouldNotifyUser,
                 createdAt,
@@ -84,7 +77,6 @@ namespace InterestPayout.Common.Domain
         }
 
         public bool UpdatePayoutSchedule(string newPayoutAssetId,
-            decimal newInterestRate,
             string newCronSchedule,
             bool newShouldNotifyUser)
         {
@@ -96,12 +88,6 @@ namespace InterestPayout.Common.Domain
                 hasChanges = true;
             }
 
-            if (newInterestRate != InterestRate)
-            {
-                InterestRate = newInterestRate;
-                hasChanges = true;
-            }
-            
             if (!CronSchedule.Equals(newCronSchedule))
             {
                 CronSchedule = newCronSchedule;

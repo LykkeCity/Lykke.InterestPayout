@@ -9,8 +9,6 @@ namespace InterestPayout.Common.Domain
 
         public TimeSpan CronScheduleInterval { get; set; }
         
-        public decimal InterestRate { get; set; }
-        
         public bool ShouldNotifyUser { get; set; }
         
         public long InternalScheduleId { get; set; }

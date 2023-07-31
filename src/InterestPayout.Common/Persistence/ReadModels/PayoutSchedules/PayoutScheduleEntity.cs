@@ -10,8 +10,6 @@ namespace InterestPayout.Common.Persistence.ReadModels.PayoutSchedules
 
         public string PayoutAssetId { get; set; }
         
-        public decimal InterestRate { get; set; }
-        
         public string CronSchedule { get; set; }
         
         public bool ShouldNotifyUser { get; set; }

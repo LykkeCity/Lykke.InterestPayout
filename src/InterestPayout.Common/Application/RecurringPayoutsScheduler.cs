@@ -18,7 +18,6 @@ namespace InterestPayout.Common.Application
     {
         private readonly IBus _bus;
         private readonly IUnitOfWorkManager<UnitOfWork> _unitOfWorkManager;
-        private readonly IPayoutConfigService _payoutConfigService;
         private readonly IIdGenerator _idGenerator;
         private readonly ILogger<RecurringPayoutsScheduler> _logger;
 
@@ -28,52 +27,20 @@ namespace InterestPayout.Common.Application
         public RecurringPayoutsScheduler(IBus bus,
             ILogger<RecurringPayoutsScheduler> logger,
             IUnitOfWorkManager<UnitOfWork> unitOfWorkManager,
-            IPayoutConfigService payoutConfigService,
             IIdGenerator idGenerator)
         {
             _bus = bus;
             _logger = logger;
             _unitOfWorkManager = unitOfWorkManager;
-            _payoutConfigService = payoutConfigService;
             _idGenerator = idGenerator;
         }
-        
-        public async Task Init()
+
+        public async Task Remove(ISet<string> assetIds, string idempotencyId)
         {
-            _logger.LogInformation("Initialization of scheduled recurring messages is started");
+            await using var unitOfWork = await _unitOfWorkManager.Begin($"RemovingScheduleEntries:{idempotencyId}");
 
-            var configs = _payoutConfigService.GetAll();
-            await CancelSchedulesNotPresentInConfig(configs);
-            
-            foreach (var config in configs)
-            {
-                await using var unitOfWork = await _unitOfWorkManager.Begin($"SettingUpSchedules:{config.AssetId}:{DateTimeOffset.UtcNow.Ticks}");
-                try
-                {
-                    await HandleScheduleInitForConfigEntry(config, unitOfWork.PayoutSchedules);
-                    await unitOfWork.Commit();
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e, "An error occurred during initialization of payout schedule config {@context}", new
-                    {
-                        config
-                    });
-                    await TrySafeCancelScheduleAfterError(config, e);
-                    throw;
-                }
-            }
-            
-            _logger.LogInformation("Initialization of scheduled recurring messages has successfully finished");
-        }
-
-        private async Task CancelSchedulesNotPresentInConfig(IReadOnlyCollection<PayoutConfig> configs)
-        {
-            var assets = configs.Select(x => x.AssetId).ToHashSet();
-            await using var unitOfWork = await _unitOfWorkManager.Begin($"CancellingSchedulesNotPresentInCfg:{DateTimeOffset.UtcNow.Ticks}");
-
-            var schedulesToBeCancelled = await unitOfWork.PayoutSchedules.GetAllExcept(assets);
-            _logger.LogInformation("[CleanUp] found {count} schedules in db which are not present in current settings", schedulesToBeCancelled.Count);
+            var schedulesToBeCancelled = await unitOfWork.PayoutSchedules.GetByIds(assetIds);
+            _logger.LogInformation("[Removal] found {count} schedules in db which are going to be cancelled", schedulesToBeCancelled.Count);
             foreach (var schedule in schedulesToBeCancelled)
             {
                 try
@@ -83,7 +50,7 @@ namespace InterestPayout.Common.Application
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError(e, "An error occurred during removal of payout schedule config {@context}", new
+                    _logger.LogError(e, "An error occurred during removal of payout schedule entry {@context}", new
                     {
                         schedule
                     });
@@ -93,12 +60,14 @@ namespace InterestPayout.Common.Application
             await unitOfWork.Commit();
         }
 
-        private async Task HandleScheduleInitForConfigEntry(PayoutConfig config, IPayoutScheduleRepository payoutScheduleRepository)
+        public async Task CreateOrUpdate(PayoutConfig config, string idempotencyId)
         {
-            var schedule = await payoutScheduleRepository.GetByAssetIdOrDefault(config.AssetId);
+            await using var unitOfWork = await _unitOfWorkManager.Begin($"CreateOrUpdateScheduleEntries:{idempotencyId}");
+
+            var schedule = await unitOfWork.PayoutSchedules.GetByAssetIdOrDefault(config.AssetId);
             if (schedule == null)
             {
-                _logger.LogInformation("[Init]: existing schedule not found, creating new {@context}", new
+                _logger.LogInformation("[CreateOrUpdate]: existing schedule not found, creating new {@context}", new
                 {
                     config
                 });
@@ -106,16 +75,14 @@ namespace InterestPayout.Common.Application
                 schedule = PayoutSchedule.Create(newScheduleId,
                     config.AssetId,
                     config.PayoutAssetId,
-                    config.PayoutInterestRate,
                     config.PayoutCronSchedule,
                     config.Notifications.IsEnabled);
-                await payoutScheduleRepository.Add(schedule);
+                await unitOfWork.PayoutSchedules.Add(schedule);
                 await ScheduleNewRecurringPayout(schedule);
             }
             else
             {
                 var hasChanges = schedule.UpdatePayoutSchedule(config.PayoutAssetId,
-                    config.PayoutInterestRate,
                     config.PayoutCronSchedule,
                     config.Notifications.IsEnabled);
                 if (hasChanges)
@@ -124,7 +91,7 @@ namespace InterestPayout.Common.Application
                     {
                         config
                     });
-                    await payoutScheduleRepository.Update(schedule);
+                    await unitOfWork.PayoutSchedules.Update(schedule);
                     await RescheduleRecurringPayout(schedule);
                 }
                 else
@@ -135,25 +102,8 @@ namespace InterestPayout.Common.Application
                     });
                 }
             }
-        }
 
-        private async Task TrySafeCancelScheduleAfterError(PayoutConfig config, Exception originalException)
-        {
-            try
-            {
-                _logger.LogInformation($"Attempting to cancel schedule payout for asset {config.AssetId} after error");
-                await RemoveScheduledRecurringPayout(config.AssetId);
-                _logger.LogInformation($"Successfully cancelled schedule for asset {config.AssetId} after error");
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "An error occurred during cancellation of payout schedule after error {@context}", new
-                {
-                    config,
-                    OriginalException = originalException,
-                });
-                throw;
-            }
+            await unitOfWork.Commit();
         }
 
         private async Task ScheduleNewRecurringPayout(PayoutSchedule schedule)
@@ -190,7 +140,6 @@ namespace InterestPayout.Common.Application
                     AssetId = schedule.AssetId,
                     PayoutAssetId = schedule.PayoutAssetId,
                     CronScheduleInterval = executionInterval.Value,
-                    InterestRate = schedule.InterestRate,
                     InternalScheduleId = schedule.Id,
                     InternalScheduleSequence = schedule.Sequence,
                     ShouldNotifyUser = schedule.ShouldNotifyUser

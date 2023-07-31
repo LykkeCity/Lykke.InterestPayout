@@ -3,15 +3,17 @@ using System;
 using InterestPayout.Common.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace InterestPayout.Common.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20230727153930_AssetInterestsSeparately")]
+    partial class AssetInterestsSeparately
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -42,20 +44,13 @@ namespace InterestPayout.Common.Migrations
                     b.Property<decimal>("InterestRate")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("Sequence")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTimeOffset>("ValidUntil")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("Version")
-                        .HasColumnType("bigint");
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AssetId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_asset_interest_asset_id_uq");
 
                     b.ToTable("asset_interests");
                 });

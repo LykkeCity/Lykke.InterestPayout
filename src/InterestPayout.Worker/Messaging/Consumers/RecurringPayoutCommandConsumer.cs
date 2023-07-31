@@ -8,6 +8,7 @@ using InterestPayout.Common.Application;
 using InterestPayout.Common.Configuration;
 using InterestPayout.Common.Domain;
 using InterestPayout.Common.Persistence;
+using InterestPayout.Common.Persistence.ReadModels.AssetInterests;
 using InterestPayout.Common.Utils;
 using InterestPayout.Worker.ExternalResponseModels.Assets;
 using Lykke.Cqrs;
@@ -64,6 +65,19 @@ namespace InterestPayout.Worker.Messaging.Consumers
             
             if (await IsMessageExpired(scheduledDateTime.Value, context.Message))
                 return;
+
+            await using var roUnitOfWork = await _unitOfWorkManager.Begin();
+            var interestRateEntry = await roUnitOfWork.AssetInterests.GetByAssetOrDefault(context.Message.AssetId);
+            if (interestRateEntry == null)
+            {
+                _logger.LogWarning("Cannot obtain interest rate for asset, message will be skipped {@context}", new
+                {
+                    MessageScheduledDate = scheduledDateTime.Value,
+                    CurrentDate = DateTimeOffset.UtcNow,
+                    context.Message.AssetId
+                });
+                return;
+            }
             
             var assetServiceResponse = await _assetsService.GetAssetWithHttpMessagesAsync(context.Message.PayoutAssetId);
             if (!assetServiceResponse.Response.IsSuccessStatusCode)
@@ -98,6 +112,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 {
                     await ProcessAllWalletsByClient(client,
                         context.Message,
+                        interestRateEntry.InterestRate,
                         scheduledDateTime.Value.ToString("O"),
                         assetInfo.Accuracy);
                 }
@@ -112,6 +127,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
 
         private async Task ProcessAllWalletsByClient(string clientId,
             RecurringPayoutCommand command,
+            decimal interestRate,
             string scheduledTimeStamp,
             int assetAccuracy)
         {
@@ -119,6 +135,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
             {
                 ClientId = clientId,
                 command,
+                interestRate,
                 scheduledTimeStamp,
             });
             
@@ -140,6 +157,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         balance.WalletId,
                         balance.Balance,
                         command,
+                        interestRate,
                         scheduledTimeStamp,
                         assetAccuracy,
                         creditedAmounts);
@@ -166,6 +184,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
             string walletId,
             decimal balance,
             RecurringPayoutCommand command,
+            decimal interestRate,
             string scheduledTimestamp,
             int assetAccuracy,
             List<double> creditedAmounts)
@@ -174,7 +193,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
             // ME can only accept "regular" guids as operationID (idempotency ID),
             // so we create deterministic GUID, based on longer natural idempotency ID
             var operationId = NamespaceGuid.Create(MatchingEngineFixedNamespace, idempotencyId, version: 5);
-            var amount = InterestCalculator.CalculateInterest(balance, command.InterestRate, assetAccuracy);
+            var amount = InterestCalculator.CalculateInterest(balance, interestRate, assetAccuracy);
 
             _logger.LogInformation("Attempting to perform payout {@context}", new
             {
@@ -183,6 +202,7 @@ namespace InterestPayout.Worker.Messaging.Consumers
                 ClientId = clientId,
                 WalletId = walletId,
                 command,
+                interestRate,
                 balance,
                 Amount = amount,
                 AssetAccuracy = assetAccuracy
@@ -195,7 +215,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
                     IdempotencyId = idempotencyId,
                     OperationId = operationId,
                     Amount = amount,
-                    command
+                    command,
+                    interestRate,
                 });
                 return;
             }
@@ -227,7 +248,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         matchingEngineResponse.Message,
                         matchingEngineResponse.Status,
                         Amount = amount,
-                        command
+                        command,
+                        interestRate,
                     });
                     await unitOfWork.Commit();
                     _cqrsEngine.PublishEvent(
@@ -254,7 +276,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         matchingEngineResponse.Message,
                         matchingEngineResponse.Status,
                         Amount = amount,
-                        command
+                        command,
+                        interestRate,
                     });
                     _cqrsEngine.PublishEvent(
                         new PayoutCompletedEvent
@@ -279,7 +302,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         matchingEngineResponse.Message,
                         matchingEngineResponse.Status,
                         Amount = amount,
-                        command
+                        command,
+                        interestRate,
                     });
                     throw new InvalidOperationException(
                         $"Unexpected duplication of requests to ME. IdempotencyId: '{idempotencyId}', TransactionId: '{matchingEngineResponse.TransactionId}'");
@@ -294,7 +318,8 @@ namespace InterestPayout.Worker.Messaging.Consumers
                         matchingEngineResponse.Message,
                         matchingEngineResponse.Status,
                         Amount = amount,
-                        command
+                        command,
+                        interestRate,
                     });
                     throw new InvalidOperationException(
                         $"Unexpected response from ME. IdempotencyId: '{idempotencyId}', TransactionId: '{matchingEngineResponse.TransactionId}'");
