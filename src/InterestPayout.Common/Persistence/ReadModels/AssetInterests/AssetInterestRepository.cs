@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using InterestPayout.Common.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +37,13 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
 
             return entity == null ? null : ToDomain(entity);
         }
-        
+
+        public async Task<IReadOnlyCollection<AssetInterest>> GetAll()
+        {
+            var entries = await _dbContext.AssetInterests.ToListAsync();
+            return entries.ConvertAll(x => ToDomain(x));
+        }
+
         private static Domain.AssetInterest ToDomain(AssetInterestEntity entity)
         {
             return Domain.AssetInterest.Restore(entity.Id,

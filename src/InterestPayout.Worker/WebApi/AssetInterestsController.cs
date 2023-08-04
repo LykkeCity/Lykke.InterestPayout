@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using InterestPayout.Common.Application;
-using InterestPayout.Common.Configuration;
 using InterestPayout.Common.Domain;
-using InterestPayout.Common.Extensions;
 using InterestPayout.Common.Persistence;
 using InterestPayout.Worker.WebApi.Models;
+using Lykke.InterestPayout.ApiContract;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Swisschain.Extensions.Idempotency;
 
 namespace InterestPayout.Worker.WebApi
@@ -28,7 +25,18 @@ namespace InterestPayout.Worker.WebApi
             _unitOfWorkManager = unitOfWorkManager;
             _idGenerator = idGenerator;
         }
+        
+        [HttpGet]
+        [ProducesResponseType(typeof(AssetInterestResponse[]), StatusCodes.Status200OK)]
+        public async Task<ActionResult<AssetInterestResponse>> GetAll()
+        {
+            await using var roUnitOfWork = await _unitOfWorkManager.Begin();
 
+            var entries = await roUnitOfWork.AssetInterests.GetAll();
+
+            return Ok(entries.Select(x => ToResponse(x)).ToArray());
+        }
+        
         [HttpPost("create-or-update")]
         public async Task<ActionResult> CreateOrUpdate(
             [FromBody] AssetInterestCreateOrUpdateRequest request,
@@ -65,6 +73,18 @@ namespace InterestPayout.Worker.WebApi
             await unitOfWork.Commit();
 
             return Ok();
+        }
+
+        private static AssetInterestResponse ToResponse(AssetInterest domainEntity)
+        {
+            return new AssetInterestResponse
+            {
+                Id = domainEntity.Id,
+                AssetId = domainEntity.AssetId,
+                InterestRate = domainEntity.InterestRate,
+                CreatedAt = domainEntity.CreatedAt,
+                UpdatedAt = domainEntity.UpdatedAt
+            };
         }
     }
 }

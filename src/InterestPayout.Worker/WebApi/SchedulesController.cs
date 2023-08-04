@@ -5,11 +5,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using InterestPayout.Common.Application;
 using InterestPayout.Common.Configuration;
+using InterestPayout.Common.Domain;
 using InterestPayout.Common.Extensions;
 using InterestPayout.Common.Persistence;
 using InterestPayout.Worker.WebApi.Models;
+using Lykke.InterestPayout.ApiContract;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Swisschain.Extensions.Idempotency;
 
 namespace InterestPayout.Worker.WebApi
@@ -20,12 +22,15 @@ namespace InterestPayout.Worker.WebApi
     {
         private readonly IRecurringPayoutsScheduler _payoutsScheduler;
         private readonly IPayoutConfigService _payoutConfigService;
+        private readonly IUnitOfWorkManager<UnitOfWork> _unitOfWorkManager;
 
         public SchedulesController(IRecurringPayoutsScheduler payoutsScheduler,
-            IPayoutConfigService payoutConfigService)
+            IPayoutConfigService payoutConfigService,
+            IUnitOfWorkManager<UnitOfWork> unitOfWorkManager)
         {
             _payoutsScheduler = payoutsScheduler;
             _payoutConfigService = payoutConfigService;
+            _unitOfWorkManager = unitOfWorkManager;
         }
 
         [HttpPost("create-or-update")]
@@ -73,6 +78,31 @@ namespace InterestPayout.Worker.WebApi
             await _payoutsScheduler.Remove(assetIds.ToHashSet(), idempotencyId);
             
             return Ok();
+        }
+        
+        [HttpGet]
+        [ProducesResponseType(typeof(PayoutScheduleResponse[]), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PayoutScheduleResponse[]>> GetAll()
+        {
+            await using var roUnitOfWork = await _unitOfWorkManager.Begin();
+
+            var entries = await roUnitOfWork.PayoutSchedules.GetAll();
+
+            return Ok(entries.Select(x => ToResponse(x)).ToArray());
+        }
+
+        private static PayoutScheduleResponse ToResponse(PayoutSchedule payoutSchedule)
+        {
+            return new PayoutScheduleResponse
+            {
+                Id = payoutSchedule.Id,
+                AssetId = payoutSchedule.AssetId,
+                PayoutAssetId = payoutSchedule.PayoutAssetId,
+                CronSchedule = payoutSchedule.CronSchedule,
+                ShouldNotifyUser = payoutSchedule.ShouldNotifyUser,
+                CreatedAt = payoutSchedule.CreatedAt,
+                UpdatedAt = payoutSchedule.UpdatedAt
+            };
         }
     }
 }
