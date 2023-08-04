@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\InterestPayout.ApiContract\InterestPayout.ApiContract.csproj" />
     <ProjectReference Include="..\InterestPayout.Common\InterestPayout.Common.csproj" />
     <ProjectReference Include="..\InterestPayout.MessagingContract\InterestPayout.MessagingContract.csproj" />
   </ItemGroup>

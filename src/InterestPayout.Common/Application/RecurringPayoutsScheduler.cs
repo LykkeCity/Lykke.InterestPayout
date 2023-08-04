@@ -87,7 +87,7 @@ namespace InterestPayout.Common.Application
                     config.Notifications.IsEnabled);
                 if (hasChanges)
                 {
-                    _logger.LogInformation("[Init]: found existing schedule, updating {@context}", new
+                    _logger.LogInformation("[CreateOrUpdateSchedule]: found existing schedule, updating {@context}", new
                     {
                         config
                     });
@@ -96,7 +96,7 @@ namespace InterestPayout.Common.Application
                 }
                 else
                 {
-                    _logger.LogInformation("[Init]: found existing schedule, no changes, skipping {@context}", new
+                    _logger.LogInformation("[CreateOrUpdateSchedule]: found existing schedule, no changes, skipping {@context}", new
                     {
                         config
                     });
