@@ -21,7 +21,7 @@ namespace Lykke.InterestPayout.ApiClient.WebApi
 
         public async Task<AssetInterestResponse[]> GetAll()
         {
-            var response = await _httpClient.GetAsync($"{_baseUrl}get-all");
+            var response = await _httpClient.GetAsync($"{_baseUrl}api/assets/get-all");
 
             response.EnsureSuccessStatusCode();
 
@@ -38,7 +38,7 @@ namespace Lykke.InterestPayout.ApiClient.WebApi
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Add("X-Idempotency-ID", idempotencyId);
 
-            var response = await _httpClient.PostAsync($"{_baseUrl}create-or-update", content);
+            var response = await _httpClient.PostAsync($"{_baseUrl}api/assets/create-or-update", content);
 
             return response.IsSuccessStatusCode;
         }

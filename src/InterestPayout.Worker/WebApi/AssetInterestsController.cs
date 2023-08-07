@@ -13,7 +13,7 @@ using Swisschain.Extensions.Idempotency;
 namespace InterestPayout.Worker.WebApi
 {
     [ApiController]
-    [Route("api/schedules")]
+    [Route("api/assets")]
     public class AssetInterestsController : ControllerBase
     {
         private readonly IUnitOfWorkManager<UnitOfWork> _unitOfWorkManager;
