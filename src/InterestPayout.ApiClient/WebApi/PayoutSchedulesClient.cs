@@ -29,7 +29,7 @@ namespace Lykke.InterestPayout.ApiClient.WebApi
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Add("X-Idempotency-ID", idempotencyId);
 
-            var response = await _httpClient.PostAsync($"{_baseUrl}create-or-update", content);
+            var response = await _httpClient.PostAsync($"{_baseUrl}api/schedules/create-or-update", content);
 
             return response.IsSuccessStatusCode;
         }
@@ -43,7 +43,7 @@ namespace Lykke.InterestPayout.ApiClient.WebApi
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Add("X-Idempotency-ID", idempotencyId);
 
-            var request = new HttpRequestMessage(HttpMethod.Delete, $"{_baseUrl}delete") { Content = content };
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"{_baseUrl}api/schedules/delete") { Content = content };
             var response = await _httpClient.SendAsync(request);
 
             return response.IsSuccessStatusCode;
@@ -51,7 +51,7 @@ namespace Lykke.InterestPayout.ApiClient.WebApi
 
         public async Task<PayoutScheduleResponse[]> GetAll()
         {
-            var response = await _httpClient.GetAsync($"{_baseUrl}");
+            var response = await _httpClient.GetAsync($"{_baseUrl}api/schedules");
 
             response.EnsureSuccessStatusCode();
 
