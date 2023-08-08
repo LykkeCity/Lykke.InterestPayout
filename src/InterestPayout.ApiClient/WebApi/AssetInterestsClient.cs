@@ -21,7 +21,7 @@ namespace Lykke.InterestPayout.ApiClient.WebApi
 
         public async Task<AssetInterestResponse[]> GetAll()
         {
-            var response = await _httpClient.GetAsync($"{_baseUrl}api/assets/get-all");
+            var response = await _httpClient.GetAsync($"{_baseUrl}api/assets");
 
             response.EnsureSuccessStatusCode();
 
