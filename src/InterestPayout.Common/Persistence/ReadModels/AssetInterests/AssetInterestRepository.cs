@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using InterestPayout.Common.Domain;
 using Microsoft.EntityFrameworkCore;
+using Z.EntityFramework.Plus;
 
 namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
 {
@@ -31,15 +32,9 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
 
         public async Task<int> DeleteByAssetIds(IReadOnlyCollection<string> assetIds)
         {
-            var entities = await _dbContext.AssetInterests
+            return await _dbContext.AssetInterests
                 .Where(x => assetIds.Contains(x.AssetId))
-                .ToListAsync();
-
-            if (!entities.Any())
-                return 0;
-            
-            _dbContext.AssetInterests.RemoveRange(entities);
-            return entities.Count;
+                .DeleteAsync();
         }
 
         public async Task<AssetInterest> GetByAssetOrDefault(string assetId)
