@@ -29,6 +29,19 @@ namespace InterestPayout.Common.Persistence.ReadModels.AssetInterests
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task<int> DeleteByAssetIds(IReadOnlyCollection<string> assetIds)
+        {
+            var entities = await _dbContext.AssetInterests
+                .Where(x => assetIds.Contains(x.AssetId))
+                .ToListAsync();
+
+            if (!entities.Any())
+                return 0;
+            
+            _dbContext.AssetInterests.RemoveRange(entities);
+            return entities.Count;
+        }
+
         public async Task<AssetInterest> GetByAssetOrDefault(string assetId)
         {
             var entity = await _dbContext.AssetInterests

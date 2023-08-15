@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -39,6 +40,21 @@ namespace Lykke.InterestPayout.ApiClient.WebApi
             _httpClient.DefaultRequestHeaders.Add("X-Idempotency-ID", idempotencyId);
 
             var response = await _httpClient.PostAsync($"{_baseUrl}api/assets/create-or-update", content);
+
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> Delete(IReadOnlyCollection<string> assetIds, string idempotencyId)
+        {
+            var json = JsonConvert.SerializeObject(assetIds);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Add("X-Idempotency-ID", idempotencyId);
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"{_baseUrl}api/assets/delete") { Content = content };
+            var response = await _httpClient.SendAsync(request);
 
             return response.IsSuccessStatusCode;
         }
