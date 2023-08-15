@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
@@ -72,7 +73,25 @@ namespace InterestPayout.Worker.WebApi
 
             await unitOfWork.Commit();
 
-            return Ok();
+            return Ok("success");
+        }
+        
+        [HttpDelete("delete")]
+        public async Task<ActionResult> Delete(
+            [FromBody] IReadOnlyCollection<string> assetIds,
+            [Required, FromHeader(Name = "X-Idempotency-ID")] string idempotencyId)
+        {
+            if (assetIds == null || assetIds.Count == 0 || assetIds.Any(x => string.IsNullOrWhiteSpace(x)))
+                return BadRequest("Empty asset IDs.");
+
+            await using var unitOfWork = await _unitOfWorkManager.Begin(
+                $"DeletingAssetInterest:{idempotencyId}");
+            
+            await unitOfWork.AssetInterests.DeleteByAssetIds(assetIds.ToHashSet());
+
+            await unitOfWork.Commit();
+            
+            return Ok("success");
         }
 
         private static AssetInterestResponse ToResponse(AssetInterest domainEntity)
